@@ -89,6 +89,14 @@ None - this is a test-stubs file by design. The stubs ARE the deliverable for th
 - Plan 02 must export isValidPlayerName, isValidFormula, canStartGame from server.ts to turn the 15 red tests green
 - 7 describe blocks map 1:1 to LOBBY-01 through LOBBY-07 requirements
 
+## Self-Check: PASSED
+
+- FOUND: tests/lobby.test.ts
+- FOUND: .planning/phases/02-lobby-room-system/02-01-SUMMARY.md
+- FOUND: commit 288d37d (test stubs)
+- FOUND: commit edcc0fb (docs/metadata)
+- 25 tests confirmed: 15 failing, 10 passing
+
 ---
 *Phase: 02-lobby-room-system*
 *Completed: 2026-03-30*

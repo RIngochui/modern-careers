@@ -1,4 +1,4 @@
-# Requirements: Careers — Modern Edition
+# Requirements: GIG — Game of Inevitable Grind
 
 **Defined:** 2026-03-29
 **Core Value:** Fun, chaotic, real-time multiplayer party experience playable in a browser — host on big screen, players on phones, no install required.

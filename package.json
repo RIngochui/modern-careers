@@ -1,11 +1,11 @@
 {
-  "name": "careers",
+  "name": "gig",
   "version": "1.0.0",
-  "description": "Jackbox-style multiplayer party game",
-  "main": "server.js",
+  "description": "GIG: Game of Inevitable Grind — Jackbox-style multiplayer party game",
+  "main": "server.ts",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "ts-node server.ts",
+    "dev": "nodemon --exec 'ts-node server.ts' --watch '*.ts'",
     "test": "jest --forceExit"
   },
   "dependencies": {
@@ -15,7 +15,22 @@
     "socket.io": "^4.7.2"
   },
   "devDependencies": {
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.12.0",
     "jest": "^29.7.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "ts-jest": "^29.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.ts"],
+    "transform": {
+      "^.+\\.tsx?$": ["ts-jest", { "tsconfig": { "module": "CommonJS" } }]
+    }
   }
 }

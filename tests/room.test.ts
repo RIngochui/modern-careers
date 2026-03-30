@@ -1,25 +1,27 @@
 'use strict';
 
-// Import helpers directly without starting HTTP server
-// server.js uses module.exports — safe to require in test
-let generateRoomCode, getRoom, setRoom, deleteRoom, findRoomCodeBySocketId, rooms;
+import type { GameRoom } from '../server';
+
+let generateRoomCode: () => string;
+let getRoom: (code: string) => GameRoom | undefined;
+let setRoom: (code: string, room: GameRoom) => void;
+let deleteRoom: (code: string) => boolean;
+let findRoomCodeBySocketId: (id: string) => string | undefined;
+let rooms: Map<string, GameRoom>;
 
 beforeEach(() => {
-  // Re-require on each test to get a fresh rooms Map would require cache clearing.
-  // Instead, import once and clear rooms manually between tests.
-  const server = require('../server.js');
+  const server = require('../server');
   generateRoomCode = server.generateRoomCode;
   getRoom = server.getRoom;
   setRoom = server.setRoom;
   deleteRoom = server.deleteRoom;
   findRoomCodeBySocketId = server.findRoomCodeBySocketId;
   rooms = server.rooms;
-  rooms.clear(); // ensure clean state
+  rooms.clear();
 });
 
 afterAll(() => {
-  // Close server to avoid open handles
-  const { httpServer } = require('../server.js');
+  const { httpServer } = require('../server');
   httpServer.close();
 });
 
@@ -31,14 +33,11 @@ describe('generateRoomCode', () => {
 
   test('returns unique codes across 100 calls (no immediate collision)', () => {
     const codes = new Set(Array.from({ length: 100 }, () => generateRoomCode()));
-    // With 26^4=456976 possibilities, 100 calls must all be unique
     expect(codes.size).toBe(100);
   });
 
   test('skips codes already in rooms Map', () => {
-    setRoom('AAAA', {});
-    // Can't force collision deterministically, but verify code is not 'AAAA'
-    // Run 50 times to increase probability of detecting the guard
+    setRoom('AAAA', {} as GameRoom);
     for (let i = 0; i < 50; i++) {
       const code = generateRoomCode();
       expect(code).not.toBe('AAAA');
@@ -48,7 +47,7 @@ describe('generateRoomCode', () => {
 
 describe('getRoom / setRoom / deleteRoom', () => {
   test('setRoom stores and getRoom retrieves', () => {
-    setRoom('WXYZ', { id: 'WXYZ' });
+    setRoom('WXYZ', { id: 'WXYZ' } as GameRoom);
     expect(getRoom('WXYZ')).toEqual({ id: 'WXYZ' });
   });
 
@@ -57,7 +56,7 @@ describe('getRoom / setRoom / deleteRoom', () => {
   });
 
   test('deleteRoom removes entry', () => {
-    setRoom('WXYZ', { id: 'WXYZ' });
+    setRoom('WXYZ', { id: 'WXYZ' } as GameRoom);
     deleteRoom('WXYZ');
     expect(getRoom('WXYZ')).toBeUndefined();
   });
@@ -67,7 +66,7 @@ describe('findRoomCodeBySocketId', () => {
   test('finds socketId in room players Map', () => {
     const players = new Map();
     players.set('socket-abc', { name: 'Alice' });
-    setRoom('ABCD', { players });
+    setRoom('ABCD', { players } as GameRoom);
     expect(findRoomCodeBySocketId('socket-abc')).toBe('ABCD');
   });
 

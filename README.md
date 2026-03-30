@@ -1,4 +1,4 @@
-# Careers — Modern Edition
+# GIG: Game of Inevitable Grind
 
 A Jackbox-style multiplayer party game. Host plays on a big screen; players join on their phones. No install required for players — just a browser.
 
@@ -63,8 +63,9 @@ npm test -- --coverage  # with coverage report
 | Runtime | Node.js 20.x LTS |
 | Web server | Express 4.18.x |
 | Real-time | Socket.io 4.7.x |
+| Language | TypeScript 5.x |
 | Client | Vanilla JavaScript (no build step) |
-| Testing | Jest 29.x |
+| Testing | Jest 29.x + ts-jest |
 
 ---
 
@@ -78,4 +79,4 @@ npm test -- --coverage  # with coverage report
 
 ---
 
-*Built with Node.js + Socket.io. Local + ngrok is the distribution model.*
+*Built with Node.js + Socket.io + TypeScript. Local + ngrok is the distribution model.*

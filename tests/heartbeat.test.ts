@@ -1,10 +1,18 @@
 'use strict';
 
-let socketLastPong, HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS;
-let createPlayer, createGameRoom, getRoom, setRoom, rooms;
+import type { GameRoom, Player } from '../server';
+
+let socketLastPong: Map<string, number>;
+let HEARTBEAT_INTERVAL_MS: number;
+let HEARTBEAT_TIMEOUT_MS: number;
+let createPlayer: (id: string, name: string, isHost?: boolean) => Player;
+let createGameRoom: (code: string, hostId: string) => GameRoom;
+let getRoom: (code: string) => GameRoom | undefined;
+let setRoom: (code: string, room: GameRoom) => void;
+let rooms: Map<string, GameRoom>;
 
 beforeEach(() => {
-  const server = require('../server.js');
+  const server = require('../server');
   socketLastPong = server.socketLastPong;
   HEARTBEAT_INTERVAL_MS = server.HEARTBEAT_INTERVAL_MS;
   HEARTBEAT_TIMEOUT_MS = server.HEARTBEAT_TIMEOUT_MS;
@@ -18,7 +26,7 @@ beforeEach(() => {
 });
 
 afterAll(() => {
-  require('../server.js').httpServer.close();
+  require('../server').httpServer.close();
 });
 
 describe('heartbeat constants', () => {
@@ -57,23 +65,21 @@ describe('lastPong update logic', () => {
     room.players.set('host-1', player);
     setRoom('BEAT', room);
 
-    // Simulate pong received: update lastPong
     const after = Date.now() + 100;
-    room.players.get('host-1').lastPong = after;
+    room.players.get('host-1')!.lastPong = after;
 
-    expect(getRoom('BEAT').players.get('host-1').lastPong).toBe(after);
-    expect(getRoom('BEAT').players.get('host-1').lastPong).toBeGreaterThanOrEqual(before);
+    expect(getRoom('BEAT')!.players.get('host-1')!.lastPong).toBe(after);
+    expect(getRoom('BEAT')!.players.get('host-1')!.lastPong).toBeGreaterThanOrEqual(before);
   });
 
   test('zombie detection: timestamp older than HEARTBEAT_TIMEOUT_MS triggers disconnect', () => {
-    // Verify the logic condition: now - lastPong > HEARTBEAT_TIMEOUT_MS
     const oldPong = Date.now() - (HEARTBEAT_TIMEOUT_MS + 1);
     const isZombie = (Date.now() - oldPong) > HEARTBEAT_TIMEOUT_MS;
     expect(isZombie).toBe(true);
   });
 
   test('fresh pong does NOT trigger disconnect', () => {
-    const recentPong = Date.now() - 1000; // 1 second ago — well within 60s
+    const recentPong = Date.now() - 1000;
     const isZombie = (Date.now() - recentPong) > HEARTBEAT_TIMEOUT_MS;
     expect(isZombie).toBe(false);
   });

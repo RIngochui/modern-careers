@@ -1,10 +1,18 @@
 'use strict';
 
-let getRoom, setRoom, deleteRoom, findRoomCodeBySocketId, cancelCleanup;
-let createPlayer, createGameRoom, rooms;
+import type { GameRoom, Player } from '../server';
+
+let getRoom: (code: string) => GameRoom | undefined;
+let setRoom: (code: string, room: GameRoom) => void;
+let deleteRoom: (code: string) => boolean;
+let findRoomCodeBySocketId: (id: string) => string | undefined;
+let cancelCleanup: (code: string) => void;
+let createPlayer: (id: string, name: string, isHost?: boolean) => Player;
+let createGameRoom: (code: string, hostId: string) => GameRoom;
+let rooms: Map<string, GameRoom>;
 
 beforeEach(() => {
-  const server = require('../server.js');
+  const server = require('../server');
   getRoom = server.getRoom;
   setRoom = server.setRoom;
   deleteRoom = server.deleteRoom;
@@ -17,7 +25,7 @@ beforeEach(() => {
 });
 
 afterAll(() => {
-  require('../server.js').httpServer.close();
+  require('../server').httpServer.close();
 });
 
 describe('disconnect cleanup logic', () => {
@@ -36,7 +44,6 @@ describe('disconnect cleanup logic', () => {
     setRoom('DISC', room);
 
     room.players.delete('host-1');
-    // Timer is set but not fired — room still exists
     expect(getRoom('DISC')).toBeDefined();
   });
 
@@ -55,7 +62,6 @@ describe('disconnect cleanup logic', () => {
     room.players.set('guest-1', createPlayer('guest-1', 'Bob'));
     setRoom('DISC', room);
 
-    // Guest leaves
     room.players.delete('guest-1');
     expect(room.players.size).toBe(1);
     expect(room.players.has('host-1')).toBe(true);

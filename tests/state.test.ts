@@ -1,9 +1,15 @@
 'use strict';
 
-let createPlayer, createGameRoom, GAME_PHASES, TURN_PHASES, STARTING_MONEY;
+import type { Player, GameRoom } from '../server';
+
+let createPlayer: (id: string, name: string, isHost?: boolean) => Player;
+let createGameRoom: (code: string, hostId: string) => GameRoom;
+let GAME_PHASES: Record<string, string>;
+let TURN_PHASES: Record<string, string>;
+let STARTING_MONEY: number;
 
 beforeEach(() => {
-  const server = require('../server.js');
+  const server = require('../server');
   createPlayer = server.createPlayer;
   createGameRoom = server.createGameRoom;
   GAME_PHASES = server.GAME_PHASES;
@@ -13,7 +19,7 @@ beforeEach(() => {
 });
 
 afterAll(() => {
-  require('../server.js').httpServer.close();
+  require('../server').httpServer.close();
 });
 
 describe('createPlayer', () => {

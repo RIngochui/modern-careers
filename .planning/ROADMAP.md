@@ -1,6 +1,6 @@
-# ROADMAP: Careers — Modern Edition
+# ROADMAP: GIG — Game of Inevitable Grind
 
-**Project:** Jackbox-style multiplayer party game (Node.js + Socket.io + vanilla JS)
+**Project:** Jackbox-style multiplayer party game (Node.js + Socket.io + TypeScript)
 **Target:** v1 release with 11 phases covering 74 requirements
 **Granularity:** Fine (8-12 phases, 5-10 plans per phase)
 **Last Updated:** 2026-03-29

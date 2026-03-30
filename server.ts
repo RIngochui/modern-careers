@@ -1,13 +1,82 @@
-'use strict';
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import compression from 'compression';
+import cors from 'cors';
+import path from 'path';
 
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const compression = require('compression');
-const cors = require('cors');
-const path = require('path');
+const PORT: number = parseInt(process.env.PORT ?? '3000', 10);
 
-const PORT = process.env.PORT || 3000;
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export interface SuccessFormula {
+  money: number;
+  fame: number;
+  happiness: number;
+}
+
+export interface Player {
+  socketId: string;
+  name: string;
+  isHost: boolean;
+  // Stats
+  money: number;
+  fame: number;
+  happiness: number;
+  // Board position
+  position: number;
+  // Status flags
+  inPrison: boolean;
+  skipNextTurn: boolean;
+  retired: boolean;
+  unemployed: boolean;
+  // Life events
+  isMarried: boolean;
+  kids: number;
+  collegeDebt: number;
+  degree: string | null;         // null | 'compSci' | 'business' | 'healthSciences' | 'teaching'
+  career: string | null;         // null | career path name
+  hasStudentLoans: boolean;
+  // Character portrait overlays
+  hasWeddingRing: boolean;
+  hasSportsCar: boolean;
+  hasLandlordHat: boolean;
+  graduationCapColor: string | null;  // null | 'blue' | 'green' | 'red' | 'purple'
+  careerBadge: string | null;
+  // Success Formula (set in lobby, kept secret)
+  successFormula: SuccessFormula | null;
+  hasSubmittedFormula: boolean;
+  // Cards in hand
+  luckCards: string[];
+  // Heartbeat
+  lastPong: number;
+}
+
+export interface SharedResources {
+  investmentPool: number;
+  cryptoInvestments: Map<string, number>;
+}
+
+export interface GameRoom {
+  id: string;
+  hostSocketId: string;
+  players: Map<string, Player>;
+  turnOrder: string[];
+  currentTurnIndex: number;
+  gamePhase: string;
+  turnPhase: string;
+  board: unknown[];
+  sharedResources: SharedResources;
+  cleanupTimer: ReturnType<typeof setTimeout> | null;
+  turnHistory: unknown[];
+  createdAt: number;
+  startedAt: number | null;
+}
+
+export interface RateLimit {
+  maxCalls: number;
+  windowMs: number;
+}
 
 // ── Express app ────────────────────────────────────────────────────────────
 const app = express();
@@ -27,47 +96,39 @@ const io = new Server(httpServer, {
   }
 });
 
-// ── In-memory rooms store (populated in later tasks) ──────────────────────
-const rooms = new Map(); // Map<roomCode, GameRoom>
+// ── In-memory rooms store ──────────────────────────────────────────────────
+const rooms = new Map<string, GameRoom>();
 
 // ── Room store helpers ─────────────────────────────────────────────────────
 
 /**
- * Generate a 4-uppercase-letter room code that is not already in use.
- * Uses crypto.randomBytes for randomness (no external dep).
- * @returns {string} e.g. "KBZQ"
+ * Generate a 4-uppercase-letter room code not already in use.
  */
-function generateRoomCode() {
+function generateRoomCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let code;
+  let code: string;
   do {
     code = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * 26)]).join('');
   } while (rooms.has(code));
   return code;
 }
 
-/** @returns {object|undefined} */
-function getRoom(roomCode) {
+function getRoom(roomCode: string): GameRoom | undefined {
   return rooms.get(roomCode);
 }
 
-/** @param {object} room */
-function setRoom(roomCode, room) {
+function setRoom(roomCode: string, room: GameRoom): void {
   rooms.set(roomCode, room);
 }
 
-/** @returns {boolean} true if deleted */
-function deleteRoom(roomCode) {
+function deleteRoom(roomCode: string): boolean {
   return rooms.delete(roomCode);
 }
 
 /**
  * Find the roomCode for a given socketId.
- * Returns undefined if socket is not in any room.
- * @param {string} socketId
- * @returns {string|undefined}
  */
-function findRoomCodeBySocketId(socketId) {
+function findRoomCodeBySocketId(socketId: string): string | undefined {
   for (const [code, room] of rooms) {
     if (room.players && room.players.has(socketId)) return code;
   }
@@ -75,10 +136,9 @@ function findRoomCodeBySocketId(socketId) {
 }
 
 /**
- * Cancel a scheduled room cleanup (called when a player rejoins the room).
- * @param {string} roomCode
+ * Cancel a scheduled room cleanup (called when a player rejoins).
  */
-function cancelCleanup(roomCode) {
+function cancelCleanup(roomCode: string): void {
   const room = getRoom(roomCode);
   if (room && room.cleanupTimer) {
     clearTimeout(room.cleanupTimer);
@@ -94,7 +154,7 @@ const GAME_PHASES = {
   PLAYING: 'playing',
   FINAL_ROUND: 'finalRound',
   ENDED: 'ended'
-};
+} as const;
 
 const TURN_PHASES = {
   WAITING_FOR_ROLL: 'WAITING_FOR_ROLL',
@@ -102,181 +162,117 @@ const TURN_PHASES = {
   LANDED: 'LANDED',
   TILE_RESOLVING: 'TILE_RESOLVING',
   WAITING_FOR_NEXT_TURN: 'WAITING_FOR_NEXT_TURN'
-};
+} as const;
 
 const STARTING_MONEY = 50000;
 
-// ── Player factory ────────────────────────────────────────────────────────
+// ── Player factory ─────────────────────────────────────────────────────────
 
-/**
- * Create a new Player state object.
- * @param {string} socketId
- * @param {string} name
- * @param {boolean} isHost
- * @returns {object}
- */
-function createPlayer(socketId, name, isHost = false) {
+function createPlayer(socketId: string, name: string, isHost = false): Player {
   return {
     socketId,
     name,
     isHost,
-    // Stats
     money: STARTING_MONEY,
     fame: 0,
     happiness: 0,
-    // Board position
     position: 0,
-    // Status flags
     inPrison: false,
     skipNextTurn: false,
     retired: false,
     unemployed: false,
-    // Life events
     isMarried: false,
     kids: 0,
     collegeDebt: 0,
-    degree: null,          // null | 'compSci' | 'business' | 'healthSciences' | 'teaching'
-    career: null,          // null | string (career path name)
+    degree: null,
+    career: null,
     hasStudentLoans: false,
-    // Overlays for character portrait
     hasWeddingRing: false,
     hasSportsCar: false,
     hasLandlordHat: false,
-    graduationCapColor: null,  // null | 'blue' | 'green' | 'red' | 'purple'
+    graduationCapColor: null,
     careerBadge: null,
-    // Success Formula (set in lobby, kept secret)
-    successFormula: null,   // null | { money: number, fame: number, happiness: number }
+    successFormula: null,
     hasSubmittedFormula: false,
-    // Cards in hand
     luckCards: [],
-    // Heartbeat
     lastPong: Date.now()
   };
 }
 
-// ── GameRoom factory ──────────────────────────────────────────────────────
+// ── GameRoom factory ───────────────────────────────────────────────────────
 
-/**
- * Create a new GameRoom state object.
- * @param {string} roomCode
- * @param {string} hostSocketId
- * @returns {object}
- */
-function createGameRoom(roomCode, hostSocketId) {
+function createGameRoom(roomCode: string, hostSocketId: string): GameRoom {
   return {
     id: roomCode,
     hostSocketId,
-    // Map<socketId, Player>
-    players: new Map(),
-    // Turn order — array of socketIds shuffled at game start
+    players: new Map<string, Player>(),
     turnOrder: [],
     currentTurnIndex: 0,
-    // Game phase
     gamePhase: GAME_PHASES.LOBBY,
-    // Turn phase (within a player's turn)
     turnPhase: TURN_PHASES.WAITING_FOR_ROLL,
-    // Board state (populated in Phase 3+)
     board: [],
-    // Shared resources
     sharedResources: {
-      investmentPool: 0,      // grows when players miss on Investment Pool tile
-      cryptoInvestments: new Map()  // Map<socketId, amount>
+      investmentPool: 0,
+      cryptoInvestments: new Map<string, number>()
     },
-    // Cleanup timer reference (set on empty room)
     cleanupTimer: null,
-    // Turn history (last 10 turns)
     turnHistory: [],
-    // Game metadata
     createdAt: Date.now(),
     startedAt: null
   };
 }
 
-const connectedSockets = new Set();
+const connectedSockets = new Set<string>();
 
 // ── Per-socket rate limiting ───────────────────────────────────────────────
 
-/**
- * Maximum allowed calls per event type, per socket, per window.
- * Key = event name, Value = { maxCalls, windowMs }
- */
-const RATE_LIMITS = {
-  'roll-dice':      { maxCalls: 1,  windowMs: 3000  },  // 1 roll per 3s
-  'create-room':    { maxCalls: 5,  windowMs: 60000 },  // 5 room creates per minute
-  'join-room':      { maxCalls: 10, windowMs: 60000 },  // 10 join attempts per minute
+const RATE_LIMITS: Record<string, RateLimit> = {
+  'roll-dice':      { maxCalls: 1,  windowMs: 3000  },
+  'create-room':    { maxCalls: 5,  windowMs: 60000 },
+  'join-room':      { maxCalls: 10, windowMs: 60000 },
   'submit-formula': { maxCalls: 10, windowMs: 60000 },
   'play-luck-card': { maxCalls: 5,  windowMs: 5000  },
   'requestSync':    { maxCalls: 10, windowMs: 10000 }
 };
 
-/**
- * Track per-socket event call timestamps.
- * Map<socketId, Map<eventName, number[]>> — array of timestamps within window.
- */
-const rateLimitState = new Map();
+const rateLimitState = new Map<string, Map<string, number[]>>();
 
-/**
- * Check whether a socket is allowed to fire an event.
- * Silently returns false (caller must drop the event) if over limit.
- * Side effect: prunes expired timestamps and records current call.
- *
- * @param {string} socketId
- * @param {string} eventName
- * @returns {boolean} true = allowed, false = rate limited (drop silently)
- */
-function checkRateLimit(socketId, eventName) {
+function checkRateLimit(socketId: string, eventName: string): boolean {
   const limit = RATE_LIMITS[eventName];
-  if (!limit) return true; // No limit defined for this event — always allow
+  if (!limit) return true;
 
   const now = Date.now();
 
   if (!rateLimitState.has(socketId)) {
-    rateLimitState.set(socketId, new Map());
+    rateLimitState.set(socketId, new Map<string, number[]>());
   }
-  const socketEvents = rateLimitState.get(socketId);
+  const socketEvents = rateLimitState.get(socketId)!;
 
   if (!socketEvents.has(eventName)) {
     socketEvents.set(eventName, []);
   }
-  const timestamps = socketEvents.get(eventName);
+  const timestamps = socketEvents.get(eventName)!;
 
-  // Prune timestamps outside the window
   const windowStart = now - limit.windowMs;
   const recent = timestamps.filter(ts => ts >= windowStart);
 
   if (recent.length >= limit.maxCalls) {
-    // Over limit — silently reject
     return false;
   }
 
-  // Record this call
   recent.push(now);
   socketEvents.set(eventName, recent);
   return true;
 }
 
-/**
- * Clear rate limit state for a socket (called on disconnect to free memory).
- * @param {string} socketId
- */
-function clearRateLimitState(socketId) {
+function clearRateLimitState(socketId: string): void {
   rateLimitState.delete(socketId);
 }
 
 // ── State serialisation ────────────────────────────────────────────────────
 
-/**
- * Produce a JSON-serialisable snapshot of a room's full state.
- * Maps are converted to plain objects; sensitive fields (successFormula) are
- * redacted — the server NEVER sends raw Success Formulas to clients.
- *
- * @param {object} room  — a GameRoom object
- * @param {string|null} requestingSocketId — if provided, success formula is
- *   only included for THIS socket (own formula visible to self only)
- * @returns {object}
- */
-function getFullState(room, requestingSocketId = null) {
-  const playersSnapshot = {};
+function getFullState(room: GameRoom, requestingSocketId: string | null = null): object {
+  const playersSnapshot: Record<string, object> = {};
   for (const [socketId, player] of room.players) {
     playersSnapshot[socketId] = {
       socketId: player.socketId,
@@ -302,7 +298,7 @@ function getFullState(room, requestingSocketId = null) {
       careerBadge: player.careerBadge,
       hasSubmittedFormula: player.hasSubmittedFormula,
       luckCardCount: player.luckCards.length,
-      // Only reveal own Success Formula, never others'
+      // Only reveal own Success Formula — never others'
       successFormula: socketId === requestingSocketId ? player.successFormula : null
     };
   }
@@ -313,7 +309,7 @@ function getFullState(room, requestingSocketId = null) {
     players: playersSnapshot,
     turnOrder: room.turnOrder,
     currentTurnIndex: room.currentTurnIndex,
-    currentTurnPlayer: room.turnOrder[room.currentTurnIndex] || null,
+    currentTurnPlayer: room.turnOrder[room.currentTurnIndex] ?? null,
     gamePhase: room.gamePhase,
     turnPhase: room.turnPhase,
     sharedResources: {
@@ -326,25 +322,21 @@ function getFullState(room, requestingSocketId = null) {
 }
 
 // ── Heartbeat state ────────────────────────────────────────────────────────
-// Tracks lastPong for sockets not yet assigned to a room
-const socketLastPong = new Map(); // Map<socketId, timestamp>
+const socketLastPong = new Map<string, number>();
 
-const HEARTBEAT_INTERVAL_MS = 30000;  // send ping every 30s
-const HEARTBEAT_TIMEOUT_MS  = 60000;  // disconnect if no pong for 60s
+const HEARTBEAT_INTERVAL_MS = 30000;
+const HEARTBEAT_TIMEOUT_MS  = 60000;
 
-// ── Connection handler ────────────────────────────────────────────────────
+// ── Connection handler ─────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   connectedSockets.add(socket.id);
   console.log(`[connect]  ${socket.id}  (total: ${connectedSockets.size})`);
 
-  socketLastPong.set(socket.id, Date.now()); // initialise on connect
+  socketLastPong.set(socket.id, Date.now());
 
-  // Confirm connection to client
   socket.emit('connected', { socketId: socket.id });
 
-  // ── Heartbeat: update lastPong when client responds ──────────────────────
   socket.on('pong', () => {
-    // Update lastPong on the player object if they are in a room
     const roomCode = findRoomCodeBySocketId(socket.id);
     if (roomCode) {
       const room = getRoom(roomCode);
@@ -355,12 +347,10 @@ io.on('connection', (socket) => {
         }
       }
     }
-    // Also track on a top-level map for sockets not yet in a room
     socketLastPong.set(socket.id, Date.now());
   });
 
-  // Send full state immediately when a socket requests sync (on join/reconnect)
-  socket.on('requestSync', ({ roomCode }) => {
+  socket.on('requestSync', ({ roomCode }: { roomCode: string }) => {
     const room = getRoom(roomCode);
     if (!room) {
       socket.emit('error', { message: 'Room not found' });
@@ -369,15 +359,14 @@ io.on('connection', (socket) => {
     socket.emit('gameState', getFullState(room, socket.id));
   });
 
-  socket.on('disconnect', (reason) => {
+  socket.on('disconnect', (reason: string) => {
     clearRateLimitState(socket.id);
     socketLastPong.delete(socket.id);
     connectedSockets.delete(socket.id);
     console.log(`[disconnect] ${socket.id} — ${reason}  (total: ${connectedSockets.size})`);
 
-    // Find which room this socket was in
     const roomCode = findRoomCodeBySocketId(socket.id);
-    if (!roomCode) return; // Socket wasn't in any game room
+    if (!roomCode) return;
 
     const room = getRoom(roomCode);
     if (!room) return;
@@ -385,11 +374,9 @@ io.on('connection', (socket) => {
     const player = room.players.get(socket.id);
     const playerName = player ? player.name : 'Unknown';
 
-    // Remove player from room
     room.players.delete(socket.id);
 
     if (room.players.size === 0) {
-      // Room is empty — schedule cleanup after 30 minutes (allow rejoin window)
       room.cleanupTimer = setTimeout(() => {
         const currentRoom = getRoom(roomCode);
         if (currentRoom && currentRoom.players.size === 0) {
@@ -398,22 +385,18 @@ io.on('connection', (socket) => {
         }
       }, 30 * 60 * 1000);
     } else {
-      // Broadcast to remaining players
       io.to(roomCode).emit('playerLeft', {
         socketId: socket.id,
         playerName,
         remainingPlayers: room.players.size,
         timestamp: Date.now()
       });
-
-      // Send updated game state to remaining players
       io.to(roomCode).emit('gameState', getFullState(room));
     }
   });
 });
 
 // ── Periodic full-state broadcast (every 30s) ─────────────────────────────
-// Keeps all clients in sync even if an event was missed.
 const STATE_BROADCAST_INTERVAL = setInterval(() => {
   for (const [roomCode, room] of rooms) {
     if (room.players.size > 0) {
@@ -422,19 +405,16 @@ const STATE_BROADCAST_INTERVAL = setInterval(() => {
   }
 }, 30000);
 
-// Prevent Jest from hanging: expose for cleanup
-STATE_BROADCAST_INTERVAL.unref(); // Allow process to exit even if interval is active
+STATE_BROADCAST_INTERVAL.unref();
 
 // ── Heartbeat loop (every 30s) ────────────────────────────────────────────
 const HEARTBEAT_LOOP = setInterval(() => {
   const now = Date.now();
 
   for (const [socketId, socket] of io.sockets.sockets) {
-    // Send ping to each connected socket
     socket.emit('ping');
 
-    // Check if socket has been silent for more than 60 seconds
-    const lastPong = socketLastPong.get(socketId) || 0;
+    const lastPong = socketLastPong.get(socketId) ?? 0;
     if (now - lastPong > HEARTBEAT_TIMEOUT_MS) {
       console.log(`[heartbeat] Disconnecting zombie socket ${socketId} (no pong for ${HEARTBEAT_TIMEOUT_MS}ms)`);
       socket.disconnect(true);
@@ -442,14 +422,15 @@ const HEARTBEAT_LOOP = setInterval(() => {
   }
 }, HEARTBEAT_INTERVAL_MS);
 
-HEARTBEAT_LOOP.unref(); // Allow process to exit even if interval is active
+HEARTBEAT_LOOP.unref();
 
 // ── Start ──────────────────────────────────────────────────────────────────
 httpServer.listen(PORT, () => {
-  console.log(`Careers server running on http://localhost:${PORT}`);
+  console.log(`GIG server running on http://localhost:${PORT}`);
 });
 
-module.exports = {
+// ── Exports (used by tests) ────────────────────────────────────────────────
+export {
   app, httpServer, io, rooms, connectedSockets,
   generateRoomCode, getRoom, setRoom, deleteRoom, findRoomCodeBySocketId, cancelCleanup,
   createPlayer, createGameRoom,

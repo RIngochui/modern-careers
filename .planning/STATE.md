@@ -14,7 +14,7 @@ progress:
   percent: 100
 ---
 
-# Project State: Careers — Modern Edition
+# Project State: GIG: Game of Inevitable Grind
 
 **Last updated:** 2026-03-30 after completing Phase 1 Plan 02
 

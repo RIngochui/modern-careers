@@ -1,19 +1,23 @@
 'use strict';
 
-let checkRateLimit, clearRateLimitState, RATE_LIMITS, rateLimitState;
+import type { RateLimit } from '../server';
+
+let checkRateLimit: (socketId: string, event: string) => boolean;
+let clearRateLimitState: (socketId: string) => void;
+let RATE_LIMITS: Record<string, RateLimit>;
+let rateLimitState: Map<string, Map<string, number[]>>;
 
 beforeEach(() => {
-  const server = require('../server.js');
+  const server = require('../server');
   checkRateLimit = server.checkRateLimit;
   clearRateLimitState = server.clearRateLimitState;
   RATE_LIMITS = server.RATE_LIMITS;
   rateLimitState = server.rateLimitState;
-  // Clear all rate limit state between tests
   rateLimitState.clear();
 });
 
 afterAll(() => {
-  require('../server.js').httpServer.close();
+  require('../server').httpServer.close();
 });
 
 describe('checkRateLimit', () => {
@@ -23,11 +27,9 @@ describe('checkRateLimit', () => {
 
   test('returns false when maxCalls exceeded within window', () => {
     const { maxCalls } = RATE_LIMITS['roll-dice'];
-    // Exhaust the limit
     for (let i = 0; i < maxCalls; i++) {
       checkRateLimit('sock-1', 'roll-dice');
     }
-    // Next call should be rejected
     expect(checkRateLimit('sock-1', 'roll-dice')).toBe(false);
   });
 
@@ -40,7 +42,6 @@ describe('checkRateLimit', () => {
     for (let i = 0; i < maxCalls; i++) {
       checkRateLimit('sock-A', 'roll-dice');
     }
-    // sock-A is over limit but sock-B is not
     expect(checkRateLimit('sock-A', 'roll-dice')).toBe(false);
     expect(checkRateLimit('sock-B', 'roll-dice')).toBe(true);
   });
@@ -50,7 +51,6 @@ describe('checkRateLimit', () => {
     for (let i = 0; i < maxCalls; i++) {
       checkRateLimit('sock-1', 'roll-dice');
     }
-    // roll-dice is over limit but requestSync is not
     expect(checkRateLimit('sock-1', 'roll-dice')).toBe(false);
     expect(checkRateLimit('sock-1', 'requestSync')).toBe(true);
   });
@@ -77,7 +77,7 @@ describe('RATE_LIMITS config', () => {
   });
 
   test('all limits have maxCalls and windowMs', () => {
-    for (const [event, config] of Object.entries(RATE_LIMITS)) {
+    for (const [, config] of Object.entries(RATE_LIMITS)) {
       expect(typeof config.maxCalls).toBe('number');
       expect(typeof config.windowMs).toBe('number');
     }

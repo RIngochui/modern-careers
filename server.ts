@@ -222,6 +222,46 @@ function createGameRoom(roomCode: string, hostSocketId: string): GameRoom {
   };
 }
 
+// ── Lobby validation helpers ───────────────────────────────────────────────
+
+/**
+ * Validate a player name: 1-20 chars, alphanumeric + spaces only.
+ * If room is provided, also performs case-insensitive duplicate check.
+ */
+function isValidPlayerName(name: string, room?: GameRoom): boolean {
+  if (typeof name !== 'string') return false;
+  const trimmed = name.trim();
+  if (trimmed.length < 1 || trimmed.length > 20) return false;
+  if (!/^[a-zA-Z0-9 ]+$/.test(trimmed)) return false;
+  if (room) {
+    const lower = trimmed.toLowerCase();
+    const dup = Array.from(room.players.values()).some(p => p.name.toLowerCase() === lower);
+    if (dup) return false;
+  }
+  return true;
+}
+
+/**
+ * Validate a Success Formula payload: all values must be numbers, 0-60 inclusive,
+ * and sum to exactly 60.
+ */
+function isValidFormula(formula: { money: unknown; fame: unknown; happiness: unknown }): boolean {
+  const { money, fame, happiness } = formula;
+  if (typeof money !== 'number' || typeof fame !== 'number' || typeof happiness !== 'number') return false;
+  if (money < 0 || fame < 0 || happiness < 0) return false;
+  if (money > 60 || fame > 60 || happiness > 60) return false;
+  return money + fame + happiness === 60;
+}
+
+/**
+ * Check whether the game can be started:
+ * at least 2 players in the room AND all have submitted their Success Formula.
+ */
+function canStartGame(room: GameRoom): boolean {
+  if (room.players.size < 2) return false;
+  return Array.from(room.players.values()).every(p => p.hasSubmittedFormula);
+}
+
 const connectedSockets = new Set<string>();
 
 // ── Per-socket rate limiting ───────────────────────────────────────────────
@@ -437,5 +477,6 @@ export {
   GAME_PHASES, TURN_PHASES, STARTING_MONEY,
   getFullState,
   RATE_LIMITS, checkRateLimit, clearRateLimitState, rateLimitState,
-  socketLastPong, HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS
+  socketLastPong, HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS,
+  isValidPlayerName, isValidFormula, canStartGame
 };

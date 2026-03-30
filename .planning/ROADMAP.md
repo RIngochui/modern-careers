@@ -3,7 +3,7 @@
 **Project:** Jackbox-style multiplayer party game (Node.js + Socket.io + TypeScript)
 **Target:** v1 release with 11 phases covering 74 requirements
 **Granularity:** Fine (8-12 phases, 5-10 plans per phase)
-**Last Updated:** 2026-03-29
+**Last Updated:** 2026-03-30
 
 ---
 
@@ -99,18 +99,13 @@
 
 **Requirements:** LOOP-01, LOOP-02, LOOP-03, LOOP-04, LOOP-05, LOOP-06, LOOP-07
 
-### Plans
+**Plans:** 4 plans
 
-1. **Build turn state machine** — Define states: `WAITING_FOR_ROLL` (player can roll), `MID_ROLL` (moving), `LANDED` (tile effect pending), `TILE_RESOLVING` (mini game/drain in progress), `WAITING_FOR_NEXT_TURN` (turn complete); transition atomically
-2. **Implement 2-dice roll on main board** — Create `roll-dice` socket event, validate currentTurnPlayer + state=WAITING_FOR_ROLL, roll two d6, calculate new position with wrapping, transition to MID_ROLL state
-3. **Implement 1-die roll inside career/college** — On career/college path, roll 1 d6 per space instead of 2, same movement logic
-4. **Build token movement animation data** — Calculate start/end positions, send movement data to clients with timing info (for 500ms animation), transition state to LANDED after movement complete
-5. **Implement tile landing trigger** — On position reached, look up tile at position, fetch tile effect handler, route to appropriate tile logic, apply effect atomically
-6. **Build ongoing drain application** — At start of each turn (before roll), subtract marriage drain ($2k), subtract per-kid drain ($1k each), subtract student loan ($1k if applicable); deduct from money, prevent negative, broadcast updated stats
-7. **Implement turn advancement** — After tile resolves and all effects apply, move to next player in turn order, set new currentTurnPlayer, emit `nextTurn` to all players, reset state to WAITING_FOR_ROLL
-8. **Build turn history tracking** — Maintain array of turn events {turn#, player, roll, position, tileEffect, duration}; broadcast to host screen for display; limit history to last 10 turns
-9. **Create dice roll UI on player screen** — Large "Roll Dice" button, disabled except during WAITING_FOR_ROLL state, shows current player indicator, animates dice graphics during MID_ROLL
-10. **Implement host turn display** — Show current player name/avatar, current roll, board position, turn counter, turn history sidebar with last 5-10 turns
+Plans:
+- [ ] 03-01-PLAN.md — BOARD_TILES constant (40 tiles), game-loop test scaffold, roll-dice handler with 2d6 + state guards
+- [ ] 03-02-PLAN.md — Drain logic, turn advancement, tile dispatch tests (LOOP-04/05/06 test coverage)
+- [ ] 03-03-PLAN.md — Host game section: 40-tile board grid, player dots, turn history sidebar, turn counter
+- [ ] 03-04-PLAN.md — Player roll screen: Roll Dice button (turn-state-aware), drain notifications, money display
 
 ### Success Criteria
 
@@ -417,7 +412,7 @@
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 2/2 | Complete    | 2026-03-30 |
 | 2. Lobby & Room System | 4/4 | Complete   | 2026-03-30 |
-| 3. Core Game Loop | 0/10 | Not started | - |
+| 3. Core Game Loop | 0/4 | Not started | - |
 | 4. Economic Tiles | 0/10 | Not started | - |
 | 5. Life Event Tiles | 0/10 | Not started | - |
 | 6. Properties, Prison & Stomp | 0/10 | Not started | - |
@@ -477,3 +472,4 @@
 ---
 
 *Roadmap created: 2026-03-29*
+*Last updated: 2026-03-30 after Phase 3 planning*

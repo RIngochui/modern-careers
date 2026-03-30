@@ -194,6 +194,75 @@ function createGameRoom(roomCode, hostSocketId) {
 
 const connectedSockets = new Set();
 
+// ── Per-socket rate limiting ───────────────────────────────────────────────
+
+/**
+ * Maximum allowed calls per event type, per socket, per window.
+ * Key = event name, Value = { maxCalls, windowMs }
+ */
+const RATE_LIMITS = {
+  'roll-dice':      { maxCalls: 1,  windowMs: 3000  },  // 1 roll per 3s
+  'create-room':    { maxCalls: 5,  windowMs: 60000 },  // 5 room creates per minute
+  'join-room':      { maxCalls: 10, windowMs: 60000 },  // 10 join attempts per minute
+  'submit-formula': { maxCalls: 10, windowMs: 60000 },
+  'play-luck-card': { maxCalls: 5,  windowMs: 5000  },
+  'requestSync':    { maxCalls: 10, windowMs: 10000 }
+};
+
+/**
+ * Track per-socket event call timestamps.
+ * Map<socketId, Map<eventName, number[]>> — array of timestamps within window.
+ */
+const rateLimitState = new Map();
+
+/**
+ * Check whether a socket is allowed to fire an event.
+ * Silently returns false (caller must drop the event) if over limit.
+ * Side effect: prunes expired timestamps and records current call.
+ *
+ * @param {string} socketId
+ * @param {string} eventName
+ * @returns {boolean} true = allowed, false = rate limited (drop silently)
+ */
+function checkRateLimit(socketId, eventName) {
+  const limit = RATE_LIMITS[eventName];
+  if (!limit) return true; // No limit defined for this event — always allow
+
+  const now = Date.now();
+
+  if (!rateLimitState.has(socketId)) {
+    rateLimitState.set(socketId, new Map());
+  }
+  const socketEvents = rateLimitState.get(socketId);
+
+  if (!socketEvents.has(eventName)) {
+    socketEvents.set(eventName, []);
+  }
+  const timestamps = socketEvents.get(eventName);
+
+  // Prune timestamps outside the window
+  const windowStart = now - limit.windowMs;
+  const recent = timestamps.filter(ts => ts >= windowStart);
+
+  if (recent.length >= limit.maxCalls) {
+    // Over limit — silently reject
+    return false;
+  }
+
+  // Record this call
+  recent.push(now);
+  socketEvents.set(eventName, recent);
+  return true;
+}
+
+/**
+ * Clear rate limit state for a socket (called on disconnect to free memory).
+ * @param {string} socketId
+ */
+function clearRateLimitState(socketId) {
+  rateLimitState.delete(socketId);
+}
+
 // ── State serialisation ────────────────────────────────────────────────────
 
 /**
@@ -275,6 +344,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', (reason) => {
+    clearRateLimitState(socket.id);
     connectedSockets.delete(socket.id);
     console.log(`[disconnect] ${socket.id} — ${reason}  (total: ${connectedSockets.size})`);
 
@@ -338,5 +408,6 @@ module.exports = {
   generateRoomCode, getRoom, setRoom, deleteRoom, findRoomCodeBySocketId, cancelCleanup,
   createPlayer, createGameRoom,
   GAME_PHASES, TURN_PHASES, STARTING_MONEY,
-  getFullState
+  getFullState,
+  RATE_LIMITS, checkRateLimit, clearRateLimitState, rateLimitState
 };

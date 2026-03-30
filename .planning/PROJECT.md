@@ -12,7 +12,12 @@ Fun, chaotic, real-time multiplayer party experience that plays in a browser wit
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Project scaffold with npm start/test, Express on port 3000, Socket.io with CORS — Phase 1
+- ✓ In-memory room store (Map<roomCode, GameRoom>), GameRoom/Player factories, domain constants — Phase 1
+- ✓ Full-state-sync (immediate on join + 30s periodic broadcast) — Phase 1
+- ✓ Disconnect cleanup with 30-minute room timeout — Phase 1
+- ✓ Per-socket rate limiting and heartbeat/ping-pong zombie detection — Phase 1
+- ✓ README with 4-step setup (npm install → npm start → ngrok → URLs) — Phase 1
 
 ### Active
 
@@ -93,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after initialization*
+*Last updated: 2026-03-30 after Phase 1 completion*

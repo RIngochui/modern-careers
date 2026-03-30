@@ -117,3 +117,193 @@
   });
 
 })();
+
+// ── Player Lobby Logic ────────────────────────────────────────────────────────
+
+(function initPlayerLobby() {
+  // Guard: only run on player.html (has #formula-money element)
+  if (!document.getElementById('formula-money')) return;
+
+  const socket = io();
+
+  // DOM refs — join section
+  const roomCodeInput  = document.getElementById('room-code-input') as HTMLInputElement;
+  const playerNameInput = document.getElementById('player-name') as HTMLInputElement;
+  const joinBtn        = document.getElementById('join-btn') as HTMLButtonElement;
+  const joinError      = document.getElementById('join-error') as HTMLElement;
+
+  // DOM refs — formula section
+  const moneySlider    = document.getElementById('formula-money') as HTMLInputElement;
+  const fameSlider     = document.getElementById('formula-fame') as HTMLInputElement;
+  const happySlider    = document.getElementById('formula-happiness') as HTMLInputElement;
+  const moneyVal       = document.getElementById('money-value') as HTMLElement;
+  const fameVal        = document.getElementById('fame-value') as HTMLElement;
+  const happyVal       = document.getElementById('happiness-value') as HTMLElement;
+  const sumDisplay     = document.getElementById('formula-sum-display') as HTMLElement;
+  const formulaHint    = document.getElementById('formula-hint') as HTMLElement;
+  const formulaError   = document.getElementById('formula-error') as HTMLElement;
+  const submitBtn      = document.getElementById('formula-submit') as HTMLButtonElement;
+
+  // DOM refs — section visibility
+  const joinSection    = document.getElementById('join-section') as HTMLElement;
+  const formulaSection = document.getElementById('formula-section') as HTMLElement;
+  const waitingSection = document.getElementById('waiting-section') as HTMLElement;
+  const waitingStatus  = document.getElementById('waiting-status') as HTMLElement;
+
+  // ── Join form validation ────────────────────────────────────────────────────
+
+  function validateJoinForm(): void {
+    const name = playerNameInput.value.trim();
+    const code = roomCodeInput.value.trim();
+    joinBtn.disabled = !(name.length >= 1 && code.length === 4);
+  }
+
+  // Auto-uppercase room code input in real time
+  roomCodeInput.addEventListener('input', () => {
+    const pos = roomCodeInput.selectionStart ?? 0;
+    roomCodeInput.value = roomCodeInput.value.toUpperCase();
+    roomCodeInput.setSelectionRange(pos, pos);
+    validateJoinForm();
+  });
+
+  playerNameInput.addEventListener('input', validateJoinForm);
+
+  joinBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    joinError.textContent = '';
+
+    const roomCode   = roomCodeInput.value.trim().toUpperCase();
+    const playerName = playerNameInput.value.trim();
+
+    // Client-side UX guard (server validates authoritatively)
+    if (roomCode.length !== 4) {
+      joinError.textContent = 'Room code must be 4 letters';
+      return;
+    }
+    if (playerName.length < 1 || playerName.length > 20) {
+      joinError.textContent = 'Name must be 1-20 characters';
+      return;
+    }
+    if (!/^[a-zA-Z0-9 ]+$/.test(playerName)) {
+      joinError.textContent = 'Name must contain only letters, numbers, and spaces';
+      return;
+    }
+
+    joinBtn.disabled = true;
+    joinBtn.textContent = 'Joining...';
+    socket.emit('join-room', { roomCode, playerName });
+  });
+
+  // ── Formula slider validation ───────────────────────────────────────────────
+
+  function updateFormulaSum(): void {
+    const money    = parseInt(moneySlider.value, 10);
+    const fame     = parseInt(fameSlider.value, 10);
+    const happiness = parseInt(happySlider.value, 10);
+    const sum      = money + fame + happiness;
+
+    // Update live value labels
+    moneyVal.textContent  = String(money);
+    fameVal.textContent   = String(fame);
+    happyVal.textContent  = String(happiness);
+
+    // Update sum display
+    sumDisplay.textContent = `${sum} / 60`;
+
+    if (sum === 60) {
+      sumDisplay.className   = 'valid';
+      formulaHint.textContent = 'Ready to submit!';
+      submitBtn.disabled     = false;
+      formulaError.textContent = '';
+    } else if (sum < 60) {
+      sumDisplay.className   = 'invalid';
+      const diff = 60 - sum;
+      formulaHint.textContent = `${diff} more point${diff !== 1 ? 's' : ''} needed`;
+      submitBtn.disabled     = true;
+    } else {
+      sumDisplay.className   = 'invalid';
+      const over = sum - 60;
+      formulaHint.textContent = `${over} point${over !== 1 ? 's' : ''} over limit`;
+      submitBtn.disabled     = true;
+    }
+  }
+
+  moneySlider.addEventListener('input', updateFormulaSum);
+  fameSlider.addEventListener('input', updateFormulaSum);
+  happySlider.addEventListener('input', updateFormulaSum);
+
+  // Run once on load — sliders default to 20/20/20 = 60, Submit enabled
+  updateFormulaSum();
+
+  submitBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    formulaError.textContent = '';
+
+    const money    = parseInt(moneySlider.value, 10);
+    const fame     = parseInt(fameSlider.value, 10);
+    const happiness = parseInt(happySlider.value, 10);
+
+    // Client-side guard — server validates again
+    if (money + fame + happiness !== 60) {
+      formulaError.textContent = 'Formula must sum to exactly 60';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    socket.emit('submit-formula', { money, fame, happiness });
+  });
+
+  // ── Socket event handlers ────────────────────────────────────────────────────
+
+  socket.on('connected', () => {
+    // Wait for user to fill in the join form
+    validateJoinForm();
+  });
+
+  socket.on('roomState', (_state: object) => {
+    // Join success — transition to formula screen
+    joinSection.style.display    = 'none';
+    formulaSection.style.display = 'block';
+    joinBtn.textContent = 'Join Game';
+    joinBtn.disabled    = false;
+    updateFormulaSum(); // ensure initial state is correct
+  });
+
+  socket.on('formulaAccepted', (_data: { message: string }) => {
+    // Formula stored — show waiting screen
+    formulaSection.style.display = 'none';
+    waitingSection.style.display = 'block';
+    waitingStatus.textContent    = 'Waiting for host to start the game...';
+  });
+
+  socket.on('formulaSubmitted', ({ submittedCount, totalPlayerCount }: { playerName: string; submittedCount: number; totalPlayerCount: number }) => {
+    // Another player submitted — update waiting text if visible
+    if (waitingSection.style.display !== 'none') {
+      waitingStatus.textContent = `${submittedCount} of ${totalPlayerCount} formulas submitted. Waiting for host...`;
+    }
+  });
+
+  socket.on('gameStarted', ({ currentPlayerName }: { currentPlayerName: string }) => {
+    // Transition to game screen (Phase 3 populates this)
+    waitingSection.style.display = 'none';
+    formulaSection.style.display = 'none';
+    document.getElementById('game-section')!.style.display = 'block';
+    console.log('[player] Game started. First player:', currentPlayerName);
+  });
+
+  socket.on('error', ({ message }: { message: string }) => {
+    if (joinSection.style.display !== 'none') {
+      joinError.textContent  = message;
+      joinBtn.textContent    = 'Join Game';
+      joinBtn.disabled       = false;
+      validateJoinForm();
+    } else if (formulaSection.style.display !== 'none') {
+      formulaError.textContent = message;
+      submitBtn.textContent    = 'Submit Formula';
+      updateFormulaSum(); // re-evaluates disabled state
+    }
+    console.error('[player error]', message);
+  });
+
+})();

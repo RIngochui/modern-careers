@@ -26,9 +26,9 @@
 
 ### Core Game Loop
 
-- [ ] **LOOP-01**: Turn order is determined at game start and shown on host screen
-- [ ] **LOOP-02**: Active player rolls 2 dice on the main loop; 1 die inside career/college paths
-- [ ] **LOOP-03**: Player token advances the rolled number of spaces on the board
+- [x] **LOOP-01**: Turn order is determined at game start and shown on host screen
+- [x] **LOOP-02**: Active player rolls 2 dice on the main loop; 1 die inside career/college paths
+- [x] **LOOP-03**: Player token advances the rolled number of spaces on the board
 - [ ] **LOOP-04**: Landing on a tile triggers its effect automatically
 - [ ] **LOOP-05**: Turn advances to next player after all effects resolve
 - [ ] **LOOP-06**: Ongoing drains (marriage, kids, student loans) are applied automatically at the start of each player's turn

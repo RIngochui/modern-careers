@@ -166,6 +166,53 @@ const TURN_PHASES = {
 
 const STARTING_MONEY = 50000;
 
+// ── Board definition ───────────────────────────────────────────────────────
+
+export const BOARD_SIZE = 40;
+
+export const BOARD_TILES: Array<{ type: string; name: string; careerName?: string }> = [
+  { type: 'PAYDAY',          name: 'Payday' },                                             // 0  — corner
+  { type: 'CAREER_ENTRANCE', name: 'Tech Bro',             careerName: 'techBro' },        // 1
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'techBro' },        // 2
+  { type: 'TBD',             name: 'TBD...' },                                             // 3
+  { type: 'CAREER_ENTRANCE', name: 'Finance Bro',          careerName: 'financeBro' },     // 4
+  { type: 'APARTMENT',       name: 'Apartment' },                                          // 5
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'financeBro' },     // 6
+  { type: 'TBD',             name: 'TBD...' },                                             // 7
+  { type: 'CAREER_ENTRANCE', name: 'Healthcare Hero',      careerName: 'healthcare' },     // 8
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'healthcare' },     // 9
+  { type: 'PRISON',          name: 'Prison' },                                             // 10 — corner
+  { type: 'CAREER_ENTRANCE', name: 'Disillusioned Academic', careerName: 'academic' },    // 11
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'academic' },       // 12
+  { type: 'TBD',             name: 'TBD...' },                                             // 13
+  { type: 'CAREER_ENTRANCE', name: 'Streamer',             careerName: 'streamer' },       // 14
+  { type: 'TBD',             name: 'TBD...' },                                             // 15
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'streamer' },       // 16
+  { type: 'TBD',             name: 'TBD...' },                                             // 17
+  { type: 'CAREER_ENTRANCE', name: "McDonald's Employee",  careerName: 'mcdonalds' },      // 18
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'mcdonalds' },      // 19
+  { type: 'PARK_BENCH',      name: 'Park Bench' },                                         // 20 — corner
+  { type: 'CAREER_ENTRANCE', name: 'Right-Wing Grifter',   careerName: 'grifter' },        // 21
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'grifter' },        // 22
+  { type: 'TBD',             name: 'TBD...' },                                             // 23
+  { type: 'CAREER_ENTRANCE', name: 'Cop',                  careerName: 'cop' },            // 24
+  { type: 'HOUSE',           name: 'House' },                                              // 25
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'cop' },            // 26
+  { type: 'TBD',             name: 'TBD...' },                                             // 27
+  { type: 'CAREER_ENTRANCE', name: 'Artist',               careerName: 'artist' },         // 28
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'artist' },         // 29
+  { type: 'HOSPITAL',        name: 'Hospital' },                                           // 30 — corner
+  { type: 'CAREER_ENTRANCE', name: 'D&I Officer',          careerName: 'diOfficer' },      // 31
+  { type: 'OPPORTUNITY',     name: 'Opportunity',          careerName: 'diOfficer' },      // 32
+  { type: 'TBD',             name: 'TBD...' },                                             // 33
+  { type: 'TBD',             name: 'TBD...' },                                             // 34
+  { type: 'TBD',             name: 'TBD...' },                                             // 35
+  { type: 'TBD',             name: 'TBD...' },                                             // 36
+  { type: 'TBD',             name: 'TBD...' },                                             // 37
+  { type: 'TBD',             name: 'TBD...' },                                             // 38
+  { type: 'TBD',             name: 'TBD...' },                                             // 39
+];
+
 // ── Player factory ─────────────────────────────────────────────────────────
 
 function createPlayer(socketId: string, name: string, isHost = false): Player {
@@ -367,6 +414,129 @@ const socketLastPong = new Map<string, number>();
 const HEARTBEAT_INTERVAL_MS = 30000;
 const HEARTBEAT_TIMEOUT_MS  = 60000;
 
+// ── Game loop helpers ──────────────────────────────────────────────────────
+
+function applyDrains(room: GameRoom, roomCode: string): void {
+  const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+  const player = room.players.get(currentPlayerId);
+  if (!player) return;
+
+  const deductions: { type: string; amount: number }[] = [];
+  let totalDeduction = 0;
+
+  if (player.isMarried) {
+    deductions.push({ type: 'marriage', amount: 2000 });
+    totalDeduction += 2000;
+  }
+  if (player.kids > 0) {
+    deductions.push({ type: 'kids', amount: player.kids * 1000 });
+    totalDeduction += player.kids * 1000;
+  }
+  if (player.hasStudentLoans) {
+    deductions.push({ type: 'student_loans', amount: 1000 });
+    totalDeduction += 1000;
+  }
+
+  if (deductions.length === 0) return;
+
+  player.money = Math.max(0, player.money - totalDeduction);
+  io.to(roomCode).emit('drains-applied', {
+    playerId: currentPlayerId,
+    deductions,
+    newMoney: player.money
+  });
+}
+
+function advanceTurn(
+  room: GameRoom,
+  roomCode: string,
+  prevPlayerId: string,
+  prevPlayerName: string,
+  roll: number,
+  fromPosition: number,
+  toPosition: number,
+  tileType: string
+): void {
+  // Record turn history entry
+  const entry = {
+    turnNumber: room.turnHistory.length + 1,
+    playerId: prevPlayerId,
+    playerName: prevPlayerName,
+    roll,
+    fromPosition,
+    toPosition,
+    tileType,
+    timestamp: Date.now()
+  };
+  room.turnHistory.push(entry);
+  if (room.turnHistory.length > 10) room.turnHistory.shift();
+
+  // Advance to next player
+  room.currentTurnIndex = (room.currentTurnIndex + 1) % room.turnOrder.length;
+  room.turnPhase = TURN_PHASES.WAITING_FOR_ROLL;
+
+  // Apply drains to the new current player before they roll
+  applyDrains(room, roomCode);
+
+  const nextPlayerId = room.turnOrder[room.currentTurnIndex];
+  const nextPlayer = room.players.get(nextPlayerId);
+
+  // Check skipNextTurn for new current player
+  if (nextPlayer && nextPlayer.skipNextTurn) {
+    nextPlayer.skipNextTurn = false;
+    io.to(roomCode).emit('turnSkipped', {
+      playerId: nextPlayerId,
+      playerName: nextPlayer.name,
+      reason: 'burnout'
+    });
+    // Recurse to advance again (skip counts as a turn used)
+    advanceTurn(room, roomCode, nextPlayerId, nextPlayer.name, 0, nextPlayer.position, nextPlayer.position, 'SKIPPED');
+    return;
+  }
+
+  io.to(roomCode).emit('nextTurn', {
+    currentTurnIndex: room.currentTurnIndex,
+    currentPlayer: nextPlayerId,
+    currentPlayerName: nextPlayer?.name ?? '',
+    turnNumber: room.turnHistory.length + 1
+  });
+}
+
+function dispatchTile(
+  room: GameRoom,
+  roomCode: string,
+  playerId: string,
+  tileIndex: number,
+  roll: number,
+  fromPosition: number
+): void {
+  const tile = BOARD_TILES[tileIndex];
+  const tileType = tile?.type ?? 'UNKNOWN';
+  const tileName = tile?.name ?? 'Unknown';
+  const player = room.players.get(playerId);
+  if (!player) return;
+
+  room.turnPhase = TURN_PHASES.TILE_RESOLVING;
+  console.log(`[tile] ${player.name} landed on ${tileType} (${tileName}) at index ${tileIndex}`);
+
+  switch (tileType) {
+    case 'PAYDAY':
+    case 'PRISON':
+    case 'PARK_BENCH':
+    case 'HOSPITAL':
+    case 'APARTMENT':
+    case 'HOUSE':
+    case 'CAREER_ENTRANCE':
+    case 'OPPORTUNITY':
+    case 'TBD':
+    default:
+      // Phase 3 stub: all tile types advance turn immediately.
+      // Phases 4–8 replace these stubs with real handlers.
+      advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, tileType);
+      break;
+  }
+}
+
 // ── Connection handler ─────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   connectedSockets.add(socket.id);
@@ -552,6 +722,79 @@ io.on('connection', (socket) => {
     console.log(`[start-game] ${roomCode} started. Order: ${turnOrder.map(id => room.players.get(id)!.name).join(' => ')}`);
   });
 
+  // ── Game loop socket handlers ────────────────────────────────────────────
+
+  socket.on('roll-dice', () => {
+    if (!checkRateLimit(socket.id, 'roll-dice')) return;
+
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) { socket.emit('error', { message: 'You are not in a room' }); return; }
+
+    const room = getRoom(roomCode);
+    if (!room) { socket.emit('error', { message: 'Room was deleted' }); return; }
+
+    if (room.gamePhase !== GAME_PHASES.PLAYING) {
+      socket.emit('error', { message: 'Game is not in progress' }); return;
+    }
+
+    const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+    if (socket.id !== currentPlayerId) {
+      socket.emit('error', { message: 'Not your turn' }); return;
+    }
+
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_ROLL) {
+      socket.emit('error', { message: 'Cannot roll now' }); return;
+    }
+
+    const player = room.players.get(socket.id)!;
+
+    // Handle skipNextTurn flag — skip movement but still advance turn
+    if (player.skipNextTurn) {
+      player.skipNextTurn = false;
+      io.to(roomCode).emit('turnSkipped', {
+        playerId: socket.id,
+        playerName: player.name,
+        reason: 'burnout'
+      });
+      advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position, 'SKIPPED');
+      return;
+    }
+
+    // Server-authoritative 2d6 roll (main board; 1d6 for career paths deferred to Phase 7)
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const roll = d1 + d2;
+
+    const fromPosition = player.position;
+    const newPos = (fromPosition + roll) % BOARD_SIZE;
+    player.position = newPos;
+
+    room.turnPhase = TURN_PHASES.MID_ROLL;
+
+    io.to(roomCode).emit('move-token', {
+      playerId: socket.id,
+      playerName: player.name,
+      roll,
+      d1,
+      d2,
+      fromPosition,
+      toPosition: newPos
+    });
+
+    room.turnPhase = TURN_PHASES.LANDED;
+
+    io.to(roomCode).emit('tile-landed', {
+      playerId: socket.id,
+      tileIndex: newPos,
+      tileType: BOARD_TILES[newPos].type,
+      tileName: BOARD_TILES[newPos].name
+    });
+
+    console.log(`[roll-dice] ${player.name} rolled ${roll} (${d1}+${d2}): pos ${fromPosition} → ${newPos} (${BOARD_TILES[newPos].name})`);
+
+    dispatchTile(room, roomCode, socket.id, newPos, roll, fromPosition);
+  });
+
   socket.on('disconnect', (reason: string) => {
     clearRateLimitState(socket.id);
     socketLastPong.delete(socket.id);
@@ -635,5 +878,6 @@ export {
   getFullState,
   RATE_LIMITS, checkRateLimit, clearRateLimitState, rateLimitState,
   socketLastPong, HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS,
-  isValidPlayerName, isValidFormula, canStartGame
+  isValidPlayerName, isValidFormula, canStartGame,
+  applyDrains, advanceTurn, dispatchTile
 };

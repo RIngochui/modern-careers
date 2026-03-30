@@ -15,54 +15,34 @@ Players can roll dice, tokens move on a 40-tile looping board, turns advance in 
 
 ### Board Definition
 
-The main loop is a **40-tile square track** with 4 fixed corners and 10 Career Entrance tiles:
+The main loop is a **40-tile square track**. Tile positions are not fully sequenced yet — exact order to be finalized in a future discussion. The following tile categories and counts are locked:
 
-```
-BOARD[40] — full tile sequence (0-indexed, clockwise):
+| Category | Count | Notes |
+|----------|-------|-------|
+| Career Entrance (incl. College/University) | 10 | ~2–3 per side; each paired with an Opportunity tile |
+| Opportunity tiles | 10 | One per career entrance; positioned right after each career path exit reconnects to the main loop |
+| Corner tiles | 4 | Payday (0), Prison (10), Park Bench (20), Hospital (30) — effects TBD in future phases |
+| Housing tiles | 2 | Apartment (tile), House (tile) |
+| **Subtotal defined** | **26** | |
+| TBD tiles | 14 | Remaining tile types (economic, life events, luck/hazard, etc.) — finalized in later phase discussions |
+| **Total** | **40** | |
 
- 0: payday           ← Corner 1 (like GO — collect money on pass/land)
- 1: sports-betting
- 2: career-entrance  → Tech Bro
- 3: get-married
- 4: luck
- 5: career-entrance  → Finance Bro
- 6: tax-audit
- 7: viral-moment
- 8: career-entrance  → Streamer
- 9: investment-pool
-10: prison           ← Corner 2
-11: scratch-ticket
-12: career-entrance  → McDonald's Employee
-13: have-a-kid
-14: hazard
-15: covid-stimulus
-16: career-entrance  → Cop
-17: union-strike
-18: burnout
-19: college-entrance
-20: park-bench       ← Corner 3 (rest tile — no effect, safe space)
-21: crypto
-22: career-entrance  → Precarious Healthcare Hero
-23: therapy
-24: luck
-25: career-entrance  → Right-Wing Grifter
-26: nepotism
-27: reality-tv-offer
-28: career-entrance  → Artist
-29: cancelled
-30: hospital         ← Corner 4 (life event — cost/effect TBD in Phase 5)
-31: tax-audit
-32: career-entrance  → Disillusioned Academic
-33: midlife-crisis
-34: hazard
-35: student-loan-payment
-36: career-entrance  → D&I Officer
-37: ponzi-scheme
-38: lawsuit
-39: retirement-home
-```
+**Corner tiles** (positions 0, 10, 20, 30 on the square track):
+- **Payday** — exact effect TBD (likely: collect money on pass/land, similar to GO)
+- **Prison** — matches PRISON-01; players can be sent here via Goomba Stomp or tile effects
+- **Park Bench** — rest tile; exact effect TBD
+- **Hospital** — life event tile; exact effect TBD in Phase 5
 
-**Career Entrance distribution:** 3 on side 1 (tiles 1–9), 2 on side 2 (tiles 11–19), 3 on side 3 (tiles 21–29), 2 on side 4 (tiles 31–39) = 10 total.
+**Opportunity tiles** — one per career, positioned immediately after that career's exit reconnects to the main loop:
+- Landing on an Opportunity tile grants the player an **Opportunity card** for the associated career
+- Opportunity cards let a player jump directly to that career's entrance tile
+- Some Opportunity cards offer: all-expenses-paid entry, or bypass the degree requirement to enter
+- Opportunity cards are held in hand and played voluntarily (like Luck cards)
+
+**Housing tiles** (2 tiles total on the main loop):
+- **Apartment** — purchase price = 2× STARTING_MONEY ($100,000); first player who can afford it auto-buys; subsequent landers pay 25% of their current money as rent to owner
+- **House** — purchase price = 4× STARTING_MONEY ($200,000); first player who can afford it auto-buys; subsequent landers pay 33% of their current money as rent to owner
+- If no player can afford to buy, tile stays unowned; already-owned tiles always charge rent (negative money allowed per PROP-03)
 
 **Career paths (10 total):**
 
@@ -128,9 +108,11 @@ BOARD[40] — full tile sequence (0-indexed, clockwise):
 - **"Laid off due to AI boom"** — event tile inside the Tech Bro career loop (Phase 7 event deck). Noted here as a canonical funny moment the user wants included.
 - **Cop career quota mechanic** — on career start, Cop player must send one other player to prison immediately (hitting quota). When Cop players are active, prison bond payments go to Cops (split evenly) instead of bank. Captured for Phase 6.
 - **Experience cards** — gained on career path completion. Can be used instead of rolling to move a fixed number of spaces. Full mechanic TBD. Deferred to backlog.
-- **Payday corner** — players collect money when they pass or land on tile 0, similar to GO in Monopoly. Exact amount Claude's discretion (suggest $2,000).
-- **Park Bench corner** — safe rest tile, no effect. Just a breather space.
+- **Payday corner** — collect money on pass or land. Exact amount TBD (suggest $2,000 — Claude's discretion).
+- **Park Bench corner** — safe rest tile, no effect. Just a breather space. Exact effect TBD.
 - **Hospital corner** — life event tile, exact effect TBD in Phase 5.
+- **Opportunity tiles** are positioned right after each career exit re-enters the main loop — 10 tiles total, one per career path. Cards give jump access + sometimes waive entry requirements or fees.
+- **14 remaining tiles** (economic, life events, luck/hazard, etc.) — to be defined in a future discuss-phase session before Phase 4 planning.
 
 </specifics>
 
@@ -176,12 +158,12 @@ No external specs — requirements are fully captured in this document and the f
 <deferred>
 ## Deferred Ideas
 
+- **14 remaining board tiles** — economic, life event, luck/hazard, and other tile types; exact positions and counts TBD in future phase discussions.
+- **Corner tile effects** — Payday, Park Bench, Hospital effects to be fully defined in relevant future phases.
 - **Experience cards** — gained on career completion, usable instead of rolling. New mechanic not in v1 requirements. Add to roadmap backlog.
 - **Art degree / Gender Studies degree** — 2 new college degrees needed for Artist and D&I Officer careers. Flag for Phase 7 (college paths) context discussion.
 - **Cop bond mechanic** — prison bond payments route to active Cop players. Flag for Phase 6 (prison) context discussion.
-- **Hospital corner effect** — exact mechanic TBD, defined in Phase 5 (Life Event Tiles).
-- **Payday corner amount** — exact payout TBD; suggest $2,000 (Claude's discretion).
-- **Opportunity tile mechanics** — career exit routing tile; exact effect TBD.
+- **Opportunity card details** — exact set of cards per career, which ones waive degree/fee, deck size; TBD in Phase 7 context.
 
 </deferred>
 

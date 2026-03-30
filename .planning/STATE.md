@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 2
+current_plan: 1
 status: Executing Phase 03
-stopped_at: Completed 03-core-game-loop plan 01
-last_updated: "2026-03-30T23:54:59.293Z"
+stopped_at: Completed 02-lobby-room-system plan 04
+last_updated: "2026-03-30T23:48:33.147Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 10
-  completed_plans: 7
-  percent: 70
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State: GIG: Game of Inevitable Grind
 
-**Last updated:** 2026-03-30 after completing Phase 3 Plan 01 (board definition + roll-dice handler)
+**Last updated:** 2026-03-30 after completing Phase 2 Plan 04 (player lobby screen)
 
-**Progress:** [███████░░░] 70%
+**Progress:** [██████████] 100%
 
 ## Project Reference
 
@@ -29,16 +29,16 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 ## Current Status
 
-**Phase:** 3
-**Current Plan:** 1 (of 4)
-**Stopped at:** Completed 03-core-game-loop plan 01
-**Next action:** Continue Phase 3 plans (turn advancement, drains UI, host board)
+**Phase:** 2
+**Current Plan:** 1
+**Stopped at:** Completed 02-lobby-room-system plan 04
+**Next action:** Continue Phase 2 plans (frontend lobby UI)
 
 ## Phase Progress
 
 - [x] Phase 1: Foundation & Setup (2/2 plans complete)
-- [x] Phase 2: Lobby & Room System (4/4 plans complete)
-- [ ] Phase 3: Core Game Loop (1/4 plans complete)
+- [ ] Phase 2: Lobby & Room System
+- [ ] Phase 3: Core Game Loop
 - [ ] Phase 4: Economic Tiles
 - [ ] Phase 5: Life Event Tiles
 - [ ] Phase 6: Properties, Prison & Goomba Stomp
@@ -68,9 +68,6 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 2026-03-30 | Fisher-Yates shuffle via playerIds.sort(() => Math.random() - 0.5) | Turn order randomization at game start |
 | 2026-03-30 | Player IIFE appended after host IIFE in client/game.ts | Shared bundle; page-specific DOM guard keeps them isolated |
 | 2026-03-30 | formulaSubmitted handler shows count only — formula values never logged or displayed client-side | Privacy preserved: server never sends money/fame/happiness in formulaSubmitted event |
-| 2026-03-30 | BOARD_TILES: 40-entry array with corners at 0/10/20/30, Apartment at 5, House at 25 | Per CONTEXT.md decisions D-01; exported inline (not re-exported) to avoid TS redeclaration |
-| 2026-03-30 | applyDrains/advanceTurn/dispatchTile as module-level helpers, not socket-scoped | Enables direct unit testing without socket harness; called from roll-dice handler |
-| 2026-03-30 | dispatchTile stubs all tile types with advanceTurn immediately | Clean seam per D-01/D-02/D-03; Phases 4-8 replace case branches with real handlers |
 
 ## Performance Metrics
 
@@ -82,4 +79,3 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 02-lobby-room-system | 02 | 5min | 2 | 2 |
 | Phase 02-lobby-room-system P03 | 2min | 2 tasks | 4 files |
 | Phase 02-lobby-room-system P04 | 3min | 2 tasks | 2 files |
-| Phase 03-core-game-loop P01 | 12min | 2 tasks | 2 files |

@@ -9,10 +9,10 @@
 
 ### Setup & Infrastructure
 
-- [ ] **SETUP-01**: Project has `package.json` with `npm start` script running Express on port 3000
+- [x] **SETUP-01**: Project has `package.json` with `npm start` script running Express on port 3000
 - [ ] **SETUP-02**: README documents: `npm install`, `npm start`, `ngrok http 3000`, host opens `/host.html`, players open `/player.html`
-- [ ] **SETUP-03**: Static files served from `/public/` (host.html, player.html, game.js, style.css)
-- [ ] **SETUP-04**: Server runs Socket.io with CORS enabled for ngrok URLs
+- [x] **SETUP-03**: Static files served from `/public/` (host.html, player.html, game.js, style.css)
+- [x] **SETUP-04**: Server runs Socket.io with CORS enabled for ngrok URLs
 
 ### Lobby & Room System
 

@@ -415,7 +415,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Setup | 0/10 | Not started | - |
+| 1. Foundation & Setup | 1/2 | In Progress|  |
 | 2. Lobby & Room System | 0/10 | Not started | - |
 | 3. Core Game Loop | 0/10 | Not started | - |
 | 4. Economic Tiles | 0/10 | Not started | - |

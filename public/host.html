@@ -3,12 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GIG — Host Screen</title>
+  <title>GIG — Host</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+    #lobby-section { max-width: 600px; margin: 0 auto; text-align: center; }
+    h1 { color: #f0c040; margin-bottom: 8px; }
+    #room-label { font-size: 0.85rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.15em; margin: 0; }
+    #room-code { font-size: 4rem; font-weight: bold; letter-spacing: 0.3em; color: #f0c040; margin: 12px 0; font-family: monospace; }
+    #status-text { color: #aaa; font-size: 0.95rem; margin: 8px 0 20px; min-height: 1.4em; }
+    #player-list { list-style: none; padding: 0; margin: 0 0 24px; }
+    #player-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #16213e; border-radius: 8px; margin: 6px 0; font-size: 1.1rem; }
+    #player-list li .check { color: #4ade80; }
+    #player-list li .pending { color: #555; }
+    #start-btn { padding: 14px 48px; font-size: 1.3rem; font-weight: bold; background: #4ade80; color: #1a1a2e; border: none; border-radius: 12px; cursor: pointer; transition: opacity 0.2s; }
+    #start-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    #start-btn:not(:disabled):hover { background: #22c55e; }
+    #error-msg { color: #f87171; font-size: 0.9rem; margin-top: 12px; min-height: 1.2em; }
+    #game-section { display: none; }
+  </style>
 </head>
 <body>
-  <h1>GIG — Host</h1>
-  <p id="status">Connecting...</p>
+
+  <!-- LOBBY SECTION -->
+  <div id="lobby-section">
+    <h1>GIG</h1>
+    <p id="room-label">Room Code</p>
+    <div id="room-code">----</div>
+    <p id="status-text">Connecting...</p>
+    <ul id="player-list"></ul>
+    <button id="start-btn" disabled>Start Game</button>
+    <p id="error-msg"></p>
+  </div>
+
+  <!-- GAME SECTION (Phase 3+) -->
+  <div id="game-section">
+    <!-- populated in Phase 3 -->
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>
 </body>

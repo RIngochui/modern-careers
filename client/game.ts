@@ -307,3 +307,190 @@
   });
 
 })();
+
+// ── Host Game Logic ───────────────────────────────────────────────────────────
+
+(function initHostGame() {
+  // Guard: only run on host.html game phase (has #board-track element)
+  if (!document.getElementById('board-track')) return;
+
+  const socket = io();
+
+  // ── State ──────────────────────────────────────────────────────────────────
+
+  const PLAYER_COLORS = ['#4ade80', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa', '#fb923c'];
+  let playerColorMap: Record<string, string> = {}; // socketId → color
+  let playerPositions: Record<string, number> = {}; // socketId → tile index
+  let currentPlayerId: string | null = null;
+  let turnHistoryItems: string[] = [];
+  const MAX_HISTORY = 5;
+
+  // ── Board initialization ───────────────────────────────────────────────────
+
+  function initBoard(players: Array<{socketId: string; name: string; position: number}>): void {
+    const track = document.getElementById('board-track')!;
+    track.innerHTML = '';
+
+    // Create 40 tile divs — labels start as index; tile-landed event updates with type abbreviation
+    for (let i = 0; i < 40; i++) {
+      const div = document.createElement('div');
+      div.className = 'tile';
+      div.dataset.index = String(i);
+
+      const label = document.createElement('span');
+      label.className = 'tile-label';
+      label.textContent = `${i}`; // index only until gameState provides type
+      div.appendChild(label);
+
+      const dots = document.createElement('div');
+      dots.className = 'tile-dots';
+      dots.id = `tile-dots-${i}`;
+      div.appendChild(dots);
+
+      track.appendChild(div);
+    }
+
+    // Assign colors and initial positions
+    players.forEach((p, idx) => {
+      playerColorMap[p.socketId] = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+      playerPositions[p.socketId] = p.position;
+    });
+
+    renderAllDots();
+  }
+
+  // ── Dot rendering ──────────────────────────────────────────────────────────
+
+  function renderAllDots(): void {
+    // Clear all dot containers
+    document.querySelectorAll('.tile-dots').forEach(d => (d.innerHTML = ''));
+    // Re-render each player's dot at their position
+    for (const [socketId, pos] of Object.entries(playerPositions)) {
+      const dotsContainer = document.getElementById(`tile-dots-${pos}`);
+      if (!dotsContainer) continue;
+      const dot = document.createElement('span');
+      dot.className = 'player-dot' + (socketId === currentPlayerId ? ' active' : '');
+      dot.style.backgroundColor = playerColorMap[socketId] ?? '#eee';
+      dot.title = socketId; // show socketId on hover for debugging
+      dotsContainer.appendChild(dot);
+    }
+  }
+
+  // ── Helper functions ───────────────────────────────────────────────────────
+
+  function updateCurrentPlayerDisplay(name: string): void {
+    const el = document.getElementById('current-player-display');
+    if (el) el.textContent = `${name}'s Turn`;
+  }
+
+  function addTurnHistory(text: string): void {
+    turnHistoryItems.unshift(text); // newest first
+    if (turnHistoryItems.length > MAX_HISTORY) turnHistoryItems.pop();
+
+    const list = document.getElementById('turn-history-list')!;
+    list.innerHTML = '';
+    turnHistoryItems.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+  }
+
+  // ── Socket event handlers ──────────────────────────────────────────────────
+
+  socket.on('gameStarted', ({ turnOrder, currentPlayerSocketId, currentPlayerName, players }: {
+    turnOrder: string[];
+    currentPlayerSocketId: string;
+    currentPlayerName: string;
+    players: Array<{socketId: string; name: string; position: number}>;
+  }) => {
+    // initHostLobby's gameStarted handler already handles section visibility;
+    // this IIFE focuses on board initialization
+    currentPlayerId = currentPlayerSocketId;
+    updateCurrentPlayerDisplay(currentPlayerName);
+    initBoard(players);
+    console.log('[host-game] Board initialized. Turn order:', turnOrder.join(' → '));
+  });
+
+  socket.on('move-token', ({ playerId, playerName, roll, toPosition, tileName }: {
+    playerId: string;
+    playerName: string;
+    roll: number;
+    toPosition: number;
+    tileName?: string;
+  }) => {
+    playerPositions[playerId] = toPosition;
+    renderAllDots();
+
+    // Highlight landing tile briefly
+    const tile = document.querySelector(`.tile[data-index="${toPosition}"]`) as HTMLElement;
+    if (tile) {
+      tile.style.borderColor = '#f0c040';
+      setTimeout(() => { tile.style.borderColor = ''; }, 1500);
+    }
+
+    // Update history
+    addTurnHistory(`${playerName} rolled ${roll} → ${tileName ?? `tile ${toPosition}`}`);
+  });
+
+  socket.on('nextTurn', ({ currentPlayer, currentPlayerName, turnNumber }: {
+    currentPlayer: string;
+    currentPlayerName: string;
+    turnNumber: number;
+  }) => {
+    // nextTurn: advance current player and update turn counter
+    currentPlayerId = currentPlayer;
+    updateCurrentPlayerDisplay(currentPlayerName);
+    const turnCounter = document.getElementById('turn-counter');
+    if (turnCounter) turnCounter.textContent = `Turn ${turnNumber}`;
+    renderAllDots(); // re-render to update active dot highlight
+  });
+
+  socket.on('tile-landed', ({ tileIndex, tileType }: {
+    tileIndex: number;
+    tileType: string;
+  }) => {
+    // Update tile label with type abbreviation if it was previously just an index
+    const tile = document.querySelector(`.tile[data-index="${tileIndex}"]`) as HTMLElement;
+    if (tile) {
+      const label = tile.querySelector('.tile-label') as HTMLElement;
+      if (label && label.textContent === String(tileIndex)) {
+        const ABBR: Record<string, string> = {
+          PAYDAY: 'PAYDAY', PRISON: 'PRISON', PARK_BENCH: 'BENCH', HOSPITAL: 'HOSP',
+          APARTMENT: 'APART', HOUSE: 'HOUSE', CAREER_ENTRANCE: 'CAREER', OPPORTUNITY: 'OPP', TBD: 'TBD'
+        };
+        label.textContent = ABBR[tileType] ?? tileType.slice(0, 6);
+      }
+    }
+  });
+
+  socket.on('drains-applied', ({ playerId, deductions, newMoney }: {
+    playerId: string;
+    deductions: Array<{type: string; amount: number}>;
+    newMoney: number;
+  }) => {
+    // Show drain summary as a transient notice in the current player display area
+    const drainText = deductions.map(d => `-$${d.amount.toLocaleString()} ${d.type}`).join(' | ');
+    const display = document.getElementById('current-player-display');
+    if (display) {
+      const notice = document.createElement('span');
+      notice.style.cssText = 'color:#f87171;font-size:0.8rem;margin-left:8px;';
+      notice.textContent = `Drains: ${drainText}`;
+      display.appendChild(notice);
+      setTimeout(() => notice.remove(), 3000);
+    }
+    console.log(`[host] drains applied to ${playerId}: ${drainText} → $${newMoney.toLocaleString()}`);
+  });
+
+  socket.on('gameState', (state: any) => {
+    // Sync positions and current player from periodic broadcast
+    if (state.players) {
+      for (const [socketId, player] of Object.entries(state.players as any)) {
+        playerPositions[socketId] = (player as any).position;
+      }
+    }
+    if (state.currentTurnPlayer) currentPlayerId = state.currentTurnPlayer;
+    renderAllDots();
+  });
+
+})();

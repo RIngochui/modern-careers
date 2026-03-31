@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 1
+current_plan: 4
 status: Executing Phase 03
-stopped_at: Completed 03-core-game-loop plan 02
-last_updated: "2026-03-31T00:03:00.183Z"
+stopped_at: Completed 03-core-game-loop plan 04 (Tasks 1-2; checkpoint Task 3 pending human-verify)
+last_updated: "2026-03-31T00:10:30Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State: GIG: Game of Inevitable Grind
 
-**Last updated:** 2026-03-30 after completing Phase 2 Plan 04 (player lobby screen)
+**Last updated:** 2026-03-31 after completing Phase 3 Plan 04 Tasks 1-2 (player roll screen)
 
-**Progress:** [████████░░] 80%
+**Progress:** [█████████░] 90%
 
 ## Project Reference
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 ## Current Status
 
-**Phase:** 2
-**Current Plan:** 1
-**Stopped at:** Completed 03-core-game-loop plan 02
-**Next action:** Continue Phase 2 plans (frontend lobby UI)
+**Phase:** 3
+**Current Plan:** 4
+**Stopped at:** Completed 03-core-game-loop plan 04 (Tasks 1-2; checkpoint Task 3 pending human-verify)
+**Next action:** Human verifies full turn cycle end-to-end (checkpoint:human-verify)
 
 ## Phase Progress
 
@@ -70,6 +70,8 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 2026-03-30 | formulaSubmitted handler shows count only — formula values never logged or displayed client-side | Privacy preserved: server never sends money/fame/happiness in formulaSubmitted event |
 | 2026-03-31 | No-emit drain test via money-unchanged assertion (not io spy) | Validates early-return path without mock complexity for module-level io |
 | 2026-03-31 | BOARD_TILES structural tests use .filter().length pattern | Reusable in future phase tests; matches acceptance criteria grep requirements |
+| 2026-03-31 | socket.id fallback in initPlayerGame after io() call | Handles race where connected fires before IIFE runs on player.html |
+| 2026-03-31 | initPlayerGame IIFE appended after initPlayerLobby in client/game.ts | Player game screen logic isolated via roll-btn DOM guard; same socket connection reused |
 
 ## Performance Metrics
 
@@ -82,3 +84,4 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | Phase 02-lobby-room-system P03 | 2min | 2 tasks | 4 files |
 | Phase 02-lobby-room-system P04 | 3min | 2 tasks | 2 files |
 | Phase 03-core-game-loop P02 | 4min | 2 tasks | 1 files |
+| 03-core-game-loop | 04 | 4min | 2 | 3 |

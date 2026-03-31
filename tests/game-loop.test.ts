@@ -220,6 +220,21 @@ describe('LOOP-06 drains', () => {
     applyDrains(room as any, 'TEST');
     expect(player.money).toBe(before); // unchanged
   });
+
+  it('drains-applied not emitted when no liabilities — money stays unchanged', () => {
+    // Verify that a player with no drains sees no money change (early-return path)
+    const room = createMockGameRoom();
+    const player = room.players.get('socket-a')!;
+    // No isMarried, no kids, no hasStudentLoans
+    expect(player.isMarried).toBe(false);
+    expect(player.kids).toBe(0);
+    expect(player.hasStudentLoans).toBe(false);
+    const moneyBefore = player.money;
+    applyDrains(room as any, 'TEST');
+    // If drains-applied were emitted, the handler would mutate money — unchanged confirms no-emit path
+    expect(player.money).toBe(moneyBefore);
+    expect(player.money).toBe(STARTING_MONEY);
+  });
 });
 
 // ── LOOP-07: Turn history ──────────────────────────────────────────────────

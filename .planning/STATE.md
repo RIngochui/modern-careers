@@ -4,21 +4,21 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: 1
 status: Executing Phase 03
-stopped_at: Completed 02-lobby-room-system plan 04
-last_updated: "2026-03-30T23:48:33.147Z"
+stopped_at: Completed 03-core-game-loop plan 02
+last_updated: "2026-03-31T00:03:00.183Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 10
-  completed_plans: 6
-  percent: 100
+  completed_plans: 8
+  percent: 80
 ---
 
 # Project State: GIG: Game of Inevitable Grind
 
 **Last updated:** 2026-03-30 after completing Phase 2 Plan 04 (player lobby screen)
 
-**Progress:** [██████████] 100%
+**Progress:** [████████░░] 80%
 
 ## Project Reference
 
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Phase:** 2
 **Current Plan:** 1
-**Stopped at:** Completed 02-lobby-room-system plan 04
+**Stopped at:** Completed 03-core-game-loop plan 02
 **Next action:** Continue Phase 2 plans (frontend lobby UI)
 
 ## Phase Progress
@@ -68,6 +68,8 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 2026-03-30 | Fisher-Yates shuffle via playerIds.sort(() => Math.random() - 0.5) | Turn order randomization at game start |
 | 2026-03-30 | Player IIFE appended after host IIFE in client/game.ts | Shared bundle; page-specific DOM guard keeps them isolated |
 | 2026-03-30 | formulaSubmitted handler shows count only — formula values never logged or displayed client-side | Privacy preserved: server never sends money/fame/happiness in formulaSubmitted event |
+| 2026-03-31 | No-emit drain test via money-unchanged assertion (not io spy) | Validates early-return path without mock complexity for module-level io |
+| 2026-03-31 | BOARD_TILES structural tests use .filter().length pattern | Reusable in future phase tests; matches acceptance criteria grep requirements |
 
 ## Performance Metrics
 
@@ -79,3 +81,4 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 02-lobby-room-system | 02 | 5min | 2 | 2 |
 | Phase 02-lobby-room-system P03 | 2min | 2 tasks | 4 files |
 | Phase 02-lobby-room-system P04 | 3min | 2 tasks | 2 files |
+| Phase 03-core-game-loop P02 | 4min | 2 tasks | 1 files |

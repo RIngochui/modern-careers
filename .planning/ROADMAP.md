@@ -99,11 +99,11 @@
 
 **Requirements:** LOOP-01, LOOP-02, LOOP-03, LOOP-04, LOOP-05, LOOP-06, LOOP-07
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 - [x] 03-01-PLAN.md — BOARD_TILES constant (40 tiles), game-loop test scaffold, roll-dice handler with 2d6 + state guards
-- [ ] 03-02-PLAN.md — Drain logic, turn advancement, tile dispatch tests (LOOP-04/05/06 test coverage)
+- [x] 03-02-PLAN.md — Drain logic, turn advancement, tile dispatch tests (LOOP-04/05/06 test coverage)
 - [ ] 03-03-PLAN.md — Host game section: 40-tile board grid, player dots, turn history sidebar, turn counter
 - [ ] 03-04-PLAN.md — Player roll screen: Roll Dice button (turn-state-aware), drain notifications, money display
 
@@ -412,7 +412,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 2/2 | Complete    | 2026-03-30 |
 | 2. Lobby & Room System | 4/4 | Complete   | 2026-03-30 |
-| 3. Core Game Loop | 1/4 | In Progress|  |
+| 3. Core Game Loop | 2/4 | In Progress|  |
 | 4. Economic Tiles | 0/10 | Not started | - |
 | 5. Life Event Tiles | 0/10 | Not started | - |
 | 6. Properties, Prison & Stomp | 0/10 | Not started | - |

@@ -36,6 +36,16 @@
     #waiting-section h2 { color: #4ade80; }
     #waiting-section p { color: #aaa; }
     #game-section { display: none; }
+    #roll-btn:not(:disabled) {
+      cursor: pointer;
+      opacity: 1;
+    }
+    #roll-btn:not(:disabled):hover {
+      background: #22c55e;
+    }
+    #roll-btn:not(:disabled):active {
+      transform: scale(0.97);
+    }
   </style>
 </head>
 <body>
@@ -102,7 +112,58 @@
   </div>
 
   <!-- GAME SECTION — Phase 3+ -->
-  <div id="game-section"></div>
+  <div id="game-section" style="display:none">
+    <div id="turn-indicator" style="text-align:center;font-size:1.125rem;font-weight:600;color:#aaa;margin-bottom:16px;">
+      Waiting for game...
+    </div>
+
+    <div id="drain-notification" style="
+      text-align:center;
+      font-size:0.875rem;
+      color:#f87171;
+      min-height:2.5em;
+      margin-bottom:12px;
+      opacity:0;
+      transition:opacity 300ms ease-out;
+    "></div>
+
+    <div style="text-align:center;margin-bottom:16px;">
+      <button id="roll-btn" disabled style="
+        display:block;
+        width:100%;
+        max-width:300px;
+        margin:0 auto;
+        height:48px;
+        font-size:1.2rem;
+        font-weight:700;
+        background:#4ade80;
+        color:#1a1a2e;
+        border:none;
+        border-radius:12px;
+        cursor:not-allowed;
+        opacity:0.35;
+        transition:opacity 0.2s,background 0.2s;
+      ">Roll Dice</button>
+    </div>
+
+    <div id="money-display" style="
+      text-align:center;
+      font-size:1rem;
+      font-family:monospace;
+      font-weight:600;
+      color:#eee;
+      margin-top:8px;
+    ">$50,000</div>
+
+    <div id="last-roll-display" style="
+      text-align:center;
+      font-size:0.875rem;
+      color:#aaa;
+      margin-top:8px;
+      font-family:monospace;
+      min-height:1.2em;
+    "></div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>

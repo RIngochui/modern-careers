@@ -32,7 +32,7 @@
 - [x] **LOOP-04**: Landing on a tile triggers its effect automatically
 - [x] **LOOP-05**: Turn advances to next player after all effects resolve
 - [x] **LOOP-06**: Ongoing drains (marriage, kids, student loans) are applied automatically at the start of each player's turn
-- [ ] **LOOP-07**: Host screen shows whose turn it is, current dice roll, and turn history
+- [x] **LOOP-07**: Host screen shows whose turn it is, current dice roll, and turn history
 
 ### Board Tiles — Economic
 

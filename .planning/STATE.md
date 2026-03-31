@@ -4,21 +4,21 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: 1
 status: Executing Phase 03
-stopped_at: Completed 03-core-game-loop plan 02
-last_updated: "2026-03-31T00:03:00.183Z"
+stopped_at: Completed 03-core-game-loop plan 03 (Tasks 1-2; checkpoint Task 3 pending human verify)
+last_updated: "2026-03-31T00:09:53.448Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State: GIG: Game of Inevitable Grind
 
 **Last updated:** 2026-03-30 after completing Phase 2 Plan 04 (player lobby screen)
 
-**Progress:** [████████░░] 80%
+**Progress:** [█████████░] 90%
 
 ## Project Reference
 
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Phase:** 2
 **Current Plan:** 1
-**Stopped at:** Completed 03-core-game-loop plan 02
+**Stopped at:** Completed 03-core-game-loop plan 03 (Tasks 1-2; checkpoint Task 3 pending human verify)
 **Next action:** Continue Phase 2 plans (frontend lobby UI)
 
 ## Phase Progress
@@ -70,6 +70,9 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 2026-03-30 | formulaSubmitted handler shows count only — formula values never logged or displayed client-side | Privacy preserved: server never sends money/fame/happiness in formulaSubmitted event |
 | 2026-03-31 | No-emit drain test via money-unchanged assertion (not io spy) | Validates early-return path without mock complexity for module-level io |
 | 2026-03-31 | BOARD_TILES structural tests use .filter().length pattern | Reusable in future phase tests; matches acceptance criteria grep requirements |
+| 2026-03-31 | CSS Grid 4×10 rectangular board (not circular SVG) for Phase 3 | True perimeter track deferred to Phase 9; rectangular grid meets Phase 3 requirements |
+| 2026-03-31 | initHostGame IIFE cooperates with initHostLobby — each calls io() separately | Both handle gameStarted for separate concerns; two socket connections on host.html, flagged for Phase 9 refactor |
+| 2026-03-31 | Tile labels default to index number, lazily updated to type abbreviation on tile-landed | Avoids requiring full BOARD_TILES broadcast; server sends type on land |
 
 ## Performance Metrics
 
@@ -82,3 +85,4 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | Phase 02-lobby-room-system P03 | 2min | 2 tasks | 4 files |
 | Phase 02-lobby-room-system P04 | 3min | 2 tasks | 2 files |
 | Phase 03-core-game-loop P02 | 4min | 2 tasks | 1 files |
+| Phase 03-core-game-loop P03 | 3min | 2 tasks | 3 files |

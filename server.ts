@@ -558,6 +558,80 @@ function dispatchTile(
       break;
     }
 
+    case 'INVESTMENT_POOL': {
+      // ECON-02: roll 1d6; roll=1 wins entire pool (reset to $0), else lose $500 added to pool
+      // Negative money allowed (pool loss can exceed current balance — adds drama per spec)
+      const ipRoll = Math.floor(Math.random() * 6) + 1;
+      let ipWon = false;
+      let ipWinnings = 0;
+
+      if (ipRoll === 1) {
+        ipWon = true;
+        ipWinnings = room.sharedResources.investmentPool;
+        player.money += ipWinnings;
+        room.sharedResources.investmentPool = 0;
+      } else {
+        player.money -= 500; // negative allowed
+        room.sharedResources.investmentPool += 500;
+      }
+
+      io.to(roomCode).emit('tile-investment-pool', {
+        playerName: player.name,
+        roll: ipRoll,
+        won: ipWon,
+        winnings: ipWon ? ipWinnings : 0,
+        poolTotal: room.sharedResources.investmentPool,
+        newMoney: player.money
+      });
+      advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, 'INVESTMENT_POOL');
+      break;
+    }
+
+    case 'CRYPTO': {
+      // ECON-06: first landing = invest (0 to current money); second landing = payout based on roll
+      // Investment tracked per-player in room.sharedResources.cryptoInvestments
+      const existingInvestment = room.sharedResources.cryptoInvestments.get(playerId) ?? 0;
+
+      if (existingInvestment === 0) {
+        // First landing: invest current money (all-in by default; client can choose in future)
+        const cryptoInvest = player.money;
+        player.money -= cryptoInvest; // money temporarily zero (will get back on second landing)
+        room.sharedResources.cryptoInvestments.set(playerId, cryptoInvest);
+
+        io.to(roomCode).emit('tile-crypto-invested', {
+          playerName: player.name,
+          investAmount: cryptoInvest,
+          newMoney: player.money
+        });
+      } else {
+        // Second landing: payout based on 1d6
+        const cryptoRoll = Math.floor(Math.random() * 6) + 1;
+        let cryptoPayout = 0;
+
+        if (cryptoRoll === 1 || cryptoRoll === 2) {
+          cryptoPayout = existingInvestment * 3; // 3× return
+        } else if (cryptoRoll === 3 || cryptoRoll === 4) {
+          cryptoPayout = existingInvestment; // break even
+        } else {
+          cryptoPayout = 0; // 5-6: worthless
+        }
+
+        player.money += cryptoPayout;
+        room.sharedResources.cryptoInvestments.set(playerId, 0); // ALWAYS reset
+
+        io.to(roomCode).emit('tile-crypto-payout', {
+          playerName: player.name,
+          originalInvestment: existingInvestment,
+          roll: cryptoRoll,
+          payout: cryptoPayout,
+          newMoney: player.money
+        });
+      }
+
+      advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, 'CRYPTO');
+      break;
+    }
+
     case 'PAYDAY':
     case 'PRISON':
     case 'PARK_BENCH':

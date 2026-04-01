@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 1
+current_plan: 3
 status: Executing Phase 4
-stopped_at: Completed 04-economic-tiles plan 00 (Wave 0 scaffold)
-last_updated: "2026-04-01T06:08:38.946Z"
+stopped_at: Completed 04-economic-tiles plan 02 (INVESTMENT_POOL and CRYPTO tile handlers)
+last_updated: "2026-04-01T06:14:00Z"
 progress:
   total_phases: 11
   completed_phases: 3
@@ -16,9 +16,9 @@ progress:
 
 # Project State: GIG: Game of Inevitable Grind
 
-**Last updated:** 2026-04-01 after completing Phase 4 Plan 00 (Wave 0 scaffold: hasPonziFlag + BOARD_TILES + test scaffold)
+**Last updated:** 2026-04-01 after completing Phase 4 Plan 02 (INVESTMENT_POOL and CRYPTO tile handlers; ECON-02 and ECON-06 GREEN)
 
-**Progress:** [███████░░░] 73%
+**Progress:** [████████░░] 75%
 
 ## Project Reference
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 ## Current Status
 
 **Phase:** 4
-**Current Plan:** 1
-**Stopped at:** Completed 04-economic-tiles plan 00 (Wave 0 scaffold)
-**Next action:** Execute plan 04-01 (stateless economic tiles: Sports Betting, COVID Stimulus, Tax Audit, Scratch Ticket)
+**Current Plan:** 3
+**Stopped at:** Completed 04-economic-tiles plan 02 (INVESTMENT_POOL and CRYPTO tile handlers)
+**Next action:** Execute plan 04-03 (social economic tiles: Nepotism, Union Strike)
 
 ## Phase Progress
 
@@ -74,6 +74,9 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 2026-03-31 | initPlayerGame IIFE appended after initPlayerLobby in client/game.ts | Player game screen logic isolated via roll-btn DOM guard; same socket connection reused |
 | 2026-04-01 | BOARD_TILES positions 33-35 map to UNION_STRIKE/PONZI_SCHEME/STUDENT_LOAN_PAYMENT | Positions 36-39 remain TBD for future phases per plan specification |
 | 2026-04-01 | hasPonziFlag: boolean added to Player interface | Supports Ponzi Scheme fraud mechanic requiring persistent cross-turn state tracking |
+| 2026-04-01 | Negative money allowed for INVESTMENT_POOL loss (no Math.max floor) | Adds dramatic debt mechanic; aligns with RESEARCH open question #3 |
+| 2026-04-01 | CRYPTO first landing invests all current money (all-in default) | Simple implementation; future client choice layer can limit amount |
+| 2026-04-01 | cryptoInvestments reset unconditionally to 0 after payout | Avoids infinite second-landing state (Pitfall 3 from RESEARCH.md) |
 
 ## Performance Metrics
 
@@ -88,3 +91,4 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | Phase 03-core-game-loop P02 | 4min | 2 tasks | 1 files |
 | 03-core-game-loop | 04 | 4min | 2 | 3 |
 | Phase 04-economic-tiles P00 | 4min | 3 tasks | 2 files |
+| 04-economic-tiles | 02 | 3min | 2 | 2 |

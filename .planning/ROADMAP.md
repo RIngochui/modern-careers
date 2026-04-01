@@ -128,12 +128,12 @@ Plans:
 
 **Requirements:** ECON-01, ECON-02, ECON-03, ECON-04, ECON-05, ECON-06, ECON-07, ECON-08, ECON-09, ECON-10
 
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 
 Plans:
 - [x] 04-00-PLAN.md — Test scaffold (tiles-econ.test.ts), Player.hasPonziFlag, BOARD_TILES economic tile types
 - [ ] 04-01-PLAN.md — Stateless tiles: Sports Betting, COVID Stimulus, Tax Audit, Scratch Ticket (ECON-01/03/04/05)
-- [ ] 04-02-PLAN.md — Stateful tiles: Investment Pool, Crypto two-landing cycle (ECON-02/06)
+- [x] 04-02-PLAN.md — Stateful tiles: Investment Pool, Crypto two-landing cycle (ECON-02/06)
 - [ ] 04-03-PLAN.md — Social tiles: Nepotism (choice-based), Union Strike (redistribution) (ECON-07/08)
 - [ ] 04-04-PLAN.md — Complex tiles: Ponzi Scheme (fraud flag + repayment), Student Loan Payment (ECON-09/10)
 
@@ -408,7 +408,7 @@ Plans:
 | 1. Foundation & Setup | 2/2 | Complete    | 2026-03-30 |
 | 2. Lobby & Room System | 4/4 | Complete   | 2026-03-30 |
 | 3. Core Game Loop | 3/4 | In Progress|  |
-| 4. Economic Tiles | 1/5 | In Progress|  |
+| 4. Economic Tiles | 2/5 | In Progress|  |
 | 5. Life Event Tiles | 0/10 | Not started | - |
 | 6. Properties, Prison & Stomp | 0/10 | Not started | - |
 | 7. College & Career Paths | 0/10 | Not started | - |

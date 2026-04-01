@@ -132,10 +132,10 @@ Plans:
 
 Plans:
 - [x] 04-00-PLAN.md — Test scaffold (tiles-econ.test.ts), Player.hasPonziFlag, BOARD_TILES economic tile types
-- [ ] 04-01-PLAN.md — Stateless tiles: Sports Betting, COVID Stimulus, Tax Audit, Scratch Ticket (ECON-01/03/04/05)
+- [x] 04-01-PLAN.md — Stateless tiles: Sports Betting, COVID Stimulus, Tax Audit, Scratch Ticket (ECON-01/03/04/05)
 - [x] 04-02-PLAN.md — Stateful tiles: Investment Pool, Crypto two-landing cycle (ECON-02/06)
-- [ ] 04-03-PLAN.md — Social tiles: Nepotism (choice-based), Union Strike (redistribution) (ECON-07/08)
-- [ ] 04-04-PLAN.md — Complex tiles: Ponzi Scheme (fraud flag + repayment), Student Loan Payment (ECON-09/10)
+- [x] 04-03-PLAN.md — Social tiles: Nepotism (choice-based), Union Strike (redistribution) (ECON-07/08)
+- [x] 04-04-PLAN.md — Complex tiles: Ponzi Scheme (fraud flag + repayment), Student Loan Payment (ECON-09/10)
 
 ### Success Criteria
 

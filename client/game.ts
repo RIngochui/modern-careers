@@ -1,13 +1,17 @@
 // client/game.ts — Shared client entry point
 // Host lobby logic runs on host.html; player lobby logic runs on player.html (added in Plan 04)
 
+// Single shared socket for the entire page — all IIFEs use this connection
+const socket = io();
+
+// Respond to server heartbeat so sockets aren't killed as zombies
+socket.on('ping', () => { socket.emit('pong'); });
+
 // ── Host Lobby Logic ─────────────────────────────────────────────────────────
 
 (function initHostLobby() {
   // Guard: only run on host.html (has #room-code element)
   if (!document.getElementById('room-code')) return;
-
-  const socket = io();
 
   // DOM refs
   const roomCodeEl   = document.getElementById('room-code') as HTMLElement;
@@ -123,8 +127,6 @@
 (function initPlayerLobby() {
   // Guard: only run on player.html (has #formula-money element)
   if (!document.getElementById('formula-money')) return;
-
-  const socket = io();
 
   // DOM refs — join section
   const roomCodeInput  = document.getElementById('room-code-input') as HTMLInputElement;
@@ -314,8 +316,6 @@
   // Guard: only run on host.html game phase (has #board-track element)
   if (!document.getElementById('board-track')) return;
 
-  const socket = io();
-
   // ── State ──────────────────────────────────────────────────────────────────
 
   const PLAYER_COLORS = ['#4ade80', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa', '#fb923c'];
@@ -323,23 +323,34 @@
   let playerPositions: Record<string, number> = {}; // socketId → tile index
   let currentPlayerId: string | null = null;
   let turnHistoryItems: string[] = [];
-  const MAX_HISTORY = 5;
+  const MAX_HISTORY = 10;
 
   // ── Board initialization ───────────────────────────────────────────────────
+
+  // Map tile index (0-39) to grid row/col on an 11×11 perimeter board
+  function getTileGridPos(index: number): { row: number; col: number } {
+    if (index <= 10) return { row: 1,  col: index + 1 };          // top: left→right
+    if (index <= 19) return { row: index - 9,  col: 11 };          // right: top→bottom
+    if (index <= 30) return { row: 11, col: 11 - (index - 20) };   // bottom: right→left
+    return { row: 11 - (index - 30), col: 1 };                     // left: bottom→top
+  }
 
   function initBoard(players: Array<{socketId: string; name: string; position: number}>): void {
     const track = document.getElementById('board-track')!;
     track.innerHTML = '';
 
-    // Create 40 tile divs — labels start as index; tile-landed event updates with type abbreviation
     for (let i = 0; i < 40; i++) {
       const div = document.createElement('div');
       div.className = 'tile';
       div.dataset.index = String(i);
 
+      const { row, col } = getTileGridPos(i);
+      div.style.gridColumn = String(col);
+      div.style.gridRow = String(row);
+
       const label = document.createElement('span');
       label.className = 'tile-label';
-      label.textContent = `${i}`; // index only until gameState provides type
+      label.textContent = `${i}`;
       div.appendChild(label);
 
       const dots = document.createElement('div');
@@ -349,6 +360,13 @@
 
       track.appendChild(div);
     }
+
+    // Centre panel
+    const center = document.createElement('div');
+    center.id = 'board-center';
+    center.style.cssText = 'grid-column:2/11;grid-row:2/11;background:#0d0d1e;border-radius:4px;display:flex;align-items:center;justify-content:center;';
+    center.innerHTML = '<span style="font-size:1.4rem;font-weight:bold;color:#f0c040;letter-spacing:0.1em;">GIG</span>';
+    track.appendChild(center);
 
     // Assign colors and initial positions
     players.forEach((p, idx) => {
@@ -499,11 +517,6 @@
 
 (function initPlayerGame() {
   if (!document.getElementById('roll-btn')) return;
-
-  // Uses socket created in initPlayerLobby (same page).
-  // Socket.io returns the same underlying connection when io() is called
-  // multiple times from the same page without options (v4 behaviour).
-  const socket = io();
 
   const rollBtn         = document.getElementById('roll-btn') as HTMLButtonElement;
   const turnIndicator   = document.getElementById('turn-indicator') as HTMLElement;

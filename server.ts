@@ -130,6 +130,7 @@ function deleteRoom(roomCode: string): boolean {
  */
 function findRoomCodeBySocketId(socketId: string): string | undefined {
   for (const [code, room] of rooms) {
+    if (room.hostSocketId === socketId) return code;
     if (room.players && room.players.has(socketId)) return code;
   }
   return undefined;
@@ -314,7 +315,6 @@ const connectedSockets = new Set<string>();
 // ── Per-socket rate limiting ───────────────────────────────────────────────
 
 const RATE_LIMITS: Record<string, RateLimit> = {
-  'roll-dice':      { maxCalls: 1,  windowMs: 3000  },
   'create-room':    { maxCalls: 5,  windowMs: 60000 },
   'join-room':      { maxCalls: 10, windowMs: 60000 },
   'submit-formula': { maxCalls: 10, windowMs: 60000 },
@@ -843,7 +843,7 @@ const STATE_BROADCAST_INTERVAL = setInterval(() => {
       io.to(roomCode).emit('gameState', getFullState(room));
     }
   }
-}, 30000);
+}, 10000);
 
 STATE_BROADCAST_INTERVAL.unref();
 

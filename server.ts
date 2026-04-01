@@ -632,6 +632,51 @@ function dispatchTile(
       break;
     }
 
+    case 'TAX_AUDIT': {
+      // ECON-04: roll 1d6, lose (result × 5)% of current money (floor at 0, round down)
+      const taRoll = Math.floor(Math.random() * 6) + 1;
+      const deductionPercent = taRoll * 5;
+      const deductionAmount = Math.floor(player.money * deductionPercent / 100);
+      player.money = Math.max(0, player.money - deductionAmount);
+      io.to(roomCode).emit('tile-tax-audit', {
+        playerName: player.name,
+        roll: taRoll,
+        deductionPercent,
+        deductionAmount,
+        newMoney: player.money
+      });
+      advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, 'TAX_AUDIT');
+      break;
+    }
+
+    case 'SCRATCH_TICKET': {
+      // ECON-05: pay $200 (can go negative), roll 1d6
+      // roll=1: win $2,000 (net +$1,800) / roll=2-3: break even (net -$200) / roll=4-6: lose $200 more (net -$400)
+      // NOTE: money is allowed to go negative here — do NOT use Math.max
+      player.money -= 200; // pay entry cost; negative allowed
+      const stRoll = Math.floor(Math.random() * 6) + 1;
+      let stNetChange = -200; // base: paid $200
+      if (stRoll === 1) {
+        player.money += 2000;
+        stNetChange = 1800;
+      } else if (stRoll === 2 || stRoll === 3) {
+        // break even: no additional change (already paid $200)
+        stNetChange = -200;
+      } else {
+        // roll=4-6: lose $200 more
+        player.money -= 200;
+        stNetChange = -400;
+      }
+      io.to(roomCode).emit('tile-scratch-ticket', {
+        playerName: player.name,
+        roll: stRoll,
+        netChange: stNetChange,
+        newMoney: player.money
+      });
+      advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, 'SCRATCH_TICKET');
+      break;
+    }
+
     case 'PAYDAY':
     case 'PRISON':
     case 'PARK_BENCH':

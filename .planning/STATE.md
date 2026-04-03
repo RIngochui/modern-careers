@@ -16,23 +16,23 @@ progress:
 
 # Project State: Modern Careers
 
-**Last updated:** 2026-04-03 after completing Phase 6 Plan 01 (Wave 0 test scaffolding: hospital, prison, japan-trip, goomba-stomp, doctor-role)
+**Last updated:** 2026-04-03 after Phase 6 complete (Hospital, Prison, Japan Trip, Goomba Stomp — 19/19 verified)
 
-**Progress:** [██████████] 100%
+**Progress:** [████████░░] 50% — 6/12 phases complete, 22/22 current-phase plans done
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-29)
+See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Fun, chaotic, real-time multiplayer party experience playable in a browser — host on big screen, players on phones, no install required.
-**Current focus:** Phase 06 — hospital-prison-japan-trip
+**Current focus:** Phase 07 — properties-housing
 
 ## Current Status
 
 **Phase:** 7
 **Current Plan:** Not started
-**Stopped at:** Completed 06-hospital-prison-japan-trip 06-04-PLAN.md (Gap closure: prisonTurns counter, REQUIREMENTS.md fixes)
-**Next action:** Execute Plan 03 — add client-side event handlers for Phase 6 events in game.ts, recompile game.js
+**Stopped at:** Phase 6 complete — all 4 plans verified (19/19 must-haves)
+**Next action:** Plan Phase 7 — Properties & Housing
 
 ## Phase Progress
 

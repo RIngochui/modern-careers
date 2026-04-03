@@ -14,7 +14,7 @@
 - [x] **Phase 3: Core Game Loop** — Dice rolling, token movement, turn progression (completed 2026-04-01)
 - [x] **Phase 4: Economic Tiles** — First tile pass; superseded by Phase 5 board reset (completed 2026-04-01)
 - [x] **Phase 5: Board Reset** — Rebuild BOARD_TILES to final 40-tile design, add HP system, update win condition, stub all tile types (completed 2026-04-03)
-- [ ] **Phase 6: Hospital, Prison & Japan Trip** — HP→Hospital trigger, roll-to-leave, Doctor role, Prison escape, Japan Trip, Goomba Stomp
+- [x] **Phase 6: Hospital, Prison & Japan Trip** — HP→Hospital trigger, roll-to-leave, Doctor role, Prison escape, Japan Trip, Goomba Stomp (completed 2026-04-03)
 - [ ] **Phase 7: Properties & Housing** — Apartment (Tile 6), House (Tile 25), buy/rent/prison-on-default mechanics
 - [ ] **Phase 8: University & Career Paths** — University path (7 degrees), 9 career paths with entry requirements and event tiles
 - [ ] **Phase 9: Opportunity Knocks** — Card deck system, draw mechanics, card effects, hand management

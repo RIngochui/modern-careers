@@ -199,13 +199,14 @@ socket.on('ping', () => { socket.emit('pong'); });
   // ── Formula slider validation ───────────────────────────────────────────────
 
   function updateFormulaSum(): void {
-    const money    = parseInt(moneySlider.value, 10);
-    const fame     = parseInt(fameSlider.value, 10);
-    const happiness = parseInt(happySlider.value, 10);
-    const sum      = money + fame + happiness;
+    const moneyDollars = parseInt(moneySlider.value, 10);  // slider in dollars ($0–$600,000)
+    const moneyPoints  = moneyDollars / 10000;             // convert to points (0–60)
+    const fame         = parseInt(fameSlider.value, 10);
+    const happiness    = parseInt(happySlider.value, 10);
+    const sum          = moneyPoints + fame + happiness;
 
-    // Update live value labels — money shows dollar equivalent (points × $10,000)
-    moneyVal.textContent  = '$' + (money * 10000).toLocaleString();
+    // Update live value labels
+    moneyVal.textContent  = '$' + moneyDollars.toLocaleString();
     fameVal.textContent   = String(fame);
     happyVal.textContent  = String(happiness);
 
@@ -241,19 +242,20 @@ socket.on('ping', () => { socket.emit('pong'); });
     e.preventDefault();
     formulaError.textContent = '';
 
-    const money    = parseInt(moneySlider.value, 10);
-    const fame     = parseInt(fameSlider.value, 10);
-    const happiness = parseInt(happySlider.value, 10);
+    const moneyDollars = parseInt(moneySlider.value, 10);
+    const moneyPoints  = moneyDollars / 10000;  // convert back to points for server
+    const fame         = parseInt(fameSlider.value, 10);
+    const happiness    = parseInt(happySlider.value, 10);
 
     // Client-side guard — server validates again
-    if (money + fame + happiness !== 60) {
+    if (moneyPoints + fame + happiness !== 60) {
       formulaError.textContent = 'Formula must sum to exactly 60';
       return;
     }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
-    socket.emit('submit-formula', { money, fame, happiness });
+    socket.emit('submit-formula', { money: moneyPoints, fame, happiness });
   });
 
   // ── Socket event handlers ────────────────────────────────────────────────────

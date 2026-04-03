@@ -19,6 +19,8 @@ Fun, chaotic, real-time multiplayer party experience that plays in a browser wit
 - ✓ Per-socket rate limiting and heartbeat/ping-pong zombie detection — Phase 1
 - ✓ README with 4-step setup (npm install → npm start → ngrok → URLs) — Phase 1
 - ✓ All 10 economic tile server-side handlers: Sports Betting, Investment Pool, COVID Stimulus, Tax Audit, Scratch Ticket, Crypto, Nepotism, Union Strike, Ponzi Scheme, Student Loan Payment — Phase 4
+- ✓ Hospital escape/payment, Doctor role immunity, Prison escape/bail/prisonTurns counter, Japan Trip stay loop, Goomba Stomp occupancy routing — Phase 6
+- ✓ Client event handlers for all Phase 6 mechanics (status banners, stomp notifications, Japan choice UI, host prison badges [P:N]) — Phase 6
 
 ### Active
 
@@ -99,4 +101,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-01 after Phase 4 completion — all 10 economic tile handlers implemented and verified*
+*Last updated: 2026-04-03 after Phase 6 completion — Hospital, Prison, Japan Trip, Goomba Stomp all implemented and verified (19/19)*

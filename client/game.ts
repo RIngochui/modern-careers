@@ -204,8 +204,8 @@ socket.on('ping', () => { socket.emit('pong'); });
     const happiness = parseInt(happySlider.value, 10);
     const sum      = money + fame + happiness;
 
-    // Update live value labels
-    moneyVal.textContent  = String(money);
+    // Update live value labels — money shows dollar equivalent (points × $10,000)
+    moneyVal.textContent  = '$' + (money * 10000).toLocaleString();
     fameVal.textContent   = String(fame);
     happyVal.textContent  = String(happiness);
 
@@ -366,16 +366,16 @@ socket.on('ping', () => { socket.emit('pong'); });
       div.style.gridColumn = String(col);
       div.style.gridRow = String(row);
 
-      // Inject tile abbreviation and tooltip data from boardTilesData
+      // Inject full tile name and tooltip data from boardTilesData
       const tileData = boardTilesData[i];
-      const abbr = tileData ? (TILE_ABBR[tileData.type] || tileData.name.substring(0, 8)) : String(i);
+      const tileName = tileData ? tileData.name : String(i);
       const instruction = tileData?.description ?? '';
       div.setAttribute('data-instruction', instruction);
 
-      const abbrEl = document.createElement('span');
-      abbrEl.className = 'tile-abbr';
-      abbrEl.textContent = abbr;
-      div.appendChild(abbrEl);
+      const nameEl = document.createElement('span');
+      nameEl.className = 'tile-name';
+      nameEl.textContent = tileName;
+      div.appendChild(nameEl);
 
       const label = document.createElement('span');
       label.className = 'tile-label';

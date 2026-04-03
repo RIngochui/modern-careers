@@ -523,6 +523,9 @@ function advanceTurn(
     currentPlayerName: nextPlayer?.name ?? '',
     turnNumber: room.turnHistory.length + 1
   });
+
+  // Broadcast full state after every turn so clients can update stat grids immediately
+  io.to(roomCode).emit('gameState', getFullState(room));
 }
 
 

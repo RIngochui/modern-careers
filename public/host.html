@@ -27,10 +27,10 @@
     #game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 8px; }
     #turn-counter { font-size: 1rem; font-weight: 600; color: #f0c040; font-family: monospace; }
     #current-player-display { font-size: 1.125rem; font-weight: 600; color: #eee; }
-    #game-main { display: flex; gap: 16px; align-items: flex-start; }
+    #game-main { display: flex; flex-direction: column; gap: 16px; }
 
     /* Board: perimeter layout, 11×11 grid, tiles around the border only */
-    #board-container { flex: 1; min-width: 0; }
+    #board-container { width: 100%; }
     #board-track {
       display: grid;
       grid-template-columns: repeat(11, 1fr);
@@ -50,73 +50,66 @@
       border-radius: 3px;
       padding: 2px;
       text-align: center;
-      font-size: 0.5rem;
+      font-size: 0.55rem;
       font-weight: 600;
       color: #aaa;
       font-family: monospace;
       position: relative;
       cursor: default;
       transition: background 0.3s;
-      overflow: hidden;
+      overflow: visible;
     }
     .tile.current-tile { background: #16213e; border-color: #f0c040; }
-    .tile-label { display: block; font-size: 0.6rem; }
+    .tile-label { display: none; }
     .tile-dots { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; margin-top: 2px; }
     .player-dot {
-      width: 12px; height: 12px;
+      width: 10px; height: 10px;
       border-radius: 50%;
       display: inline-block;
       transition: all 0.5s ease-out;
     }
-    .player-dot.active { width: 16px; height: 16px; box-shadow: 0 0 6px currentColor; }
-    /* Tile name abbreviation */
-    .tile-abbr {
+    .player-dot.active { width: 13px; height: 13px; box-shadow: 0 0 6px currentColor; }
+    /* Tile full name */
+    .tile-name {
       display: block;
-      font-size: 0.5rem;
-      font-family: monospace;
-      color: #aaa;
+      font-size: 0.55rem;
+      font-family: 'Segoe UI', sans-serif;
+      color: #ddd;
       line-height: 1.2;
+      word-break: break-word;
+      white-space: normal;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
+      max-height: 2.8em;
     }
-    /* Tooltip on hover — pure CSS, no JS needed */
+    /* Tooltip on hover — pure CSS, uses position:absolute since tile has overflow:visible */
     .tile[data-instruction]:hover::after {
       content: attr(data-instruction);
       position: absolute;
-      bottom: 110%;
+      bottom: 105%;
       left: 50%;
       transform: translateX(-50%);
       background: #16213e;
       border: 1px solid #f0c040;
       color: #eee;
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       font-family: 'Segoe UI', sans-serif;
-      padding: 4px 8px;
+      padding: 6px 10px;
       border-radius: 4px;
       white-space: normal;
-      max-width: 160px;
-      min-width: 100px;
-      z-index: 20;
+      max-width: 200px;
+      min-width: 120px;
+      z-index: 100;
       pointer-events: none;
-      line-height: 1.4;
+      line-height: 1.5;
       word-wrap: break-word;
     }
 
-    /* History sidebar */
-    #history-sidebar { width: 220px; flex-shrink: 0; }
+    /* History sidebar — now below the board */
+    #history-sidebar { width: 100%; }
     #history-sidebar h3 { font-size: 0.875rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-    #turn-history-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
-    #turn-history-list li { padding: 8px 12px; background: #16213e; border-radius: 4px; margin-bottom: 4px; font-size: 0.875rem; color: #aaa; font-family: monospace; }
+    #turn-history-list { list-style: none; padding: 0; margin: 0; max-height: 150px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px; }
+    #turn-history-list li { padding: 6px 10px; background: #16213e; border-radius: 4px; font-size: 0.875rem; color: #aaa; font-family: monospace; }
     #turn-history-list li.history-empty { color: #555; font-style: italic; }
-
-    /* Responsive: stack on small screens */
-    @media (max-width: 768px) {
-      #game-main { flex-direction: column; }
-      #history-sidebar { width: 100%; }
-      #turn-history-list { max-height: 150px; }
-    }
   </style>
 </head>
 <body>

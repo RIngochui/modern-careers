@@ -167,10 +167,12 @@ Plans:
 - [ ] Only one owner per property; persists through game
 - [ ] Landlord hat visible on owner's character
 
-**Plans:** 1/1 plans complete (RED phase only)
+**Plans:** 2/3 plans complete
 
 Plans:
 - [x] 07-01-PLAN.md — TDD Wave 0: write 8 failing tests for property buy/rent/default mechanics
+- [x] 07-02-PLAN.md — GREEN: implement handlePropertyLanding/Buy/Pass, wire dispatchTile APARTMENT/HOUSE, socket handler
+- [ ] 07-03-PLAN.md — Client UI: property event handlers in game.ts, recompile game.js
 
 ---
 
@@ -324,8 +326,8 @@ Plans:
 | 3. Core Game Loop | Complete | 2026-04-01 |
 | 4. Economic Tiles (superseded) | Complete | 2026-04-01 |
 | 5. Board Reset | Complete | 2026-04-03 |
-| 6. Hospital, Prison & Japan Trip | Not started | — |
-| 7. Properties & Housing | In Progress (Plan 01 RED) | — |
+| 6. Hospital, Prison & Japan Trip | Complete | 2026-04-03 |
+| 7. Properties & Housing | In Progress (Plan 02/03) | — |
 | 8. University & Career Paths | Not started | — |
 | 9. Opportunity Knocks | Not started | — |
 | 10. Economy & Life Tiles | Not started | — |

@@ -63,9 +63,9 @@
 
 ### Properties
 
-- [ ] **PROP-01**: **Apartment (Tile 6)** — buy for 50,000 (player choice prompt when landing on unowned tile); rent = 25% of visitor's Salary paid to owner; only one owner per property; owner landing on own tile pays nothing
-- [ ] **PROP-02**: **House (Tile 25)** — buy for 100,000 (player choice prompt when landing on unowned tile); rent = 50% of visitor's Salary paid to owner; only one owner per property; owner landing on own tile pays nothing
-- [ ] **PROP-03**: Visitor who can't afford rent: give all cash to owner, then sent to Prison (independent property-default mechanic — not shared with PRISON path)
+- [x] **PROP-01**: **Apartment (Tile 6)** — buy for 50,000 (player choice prompt when landing on unowned tile); rent = 25% of visitor's Salary paid to owner; only one owner per property; owner landing on own tile pays nothing
+- [x] **PROP-02**: **House (Tile 25)** — buy for 100,000 (player choice prompt when landing on unowned tile); rent = 50% of visitor's Salary paid to owner; only one owner per property; owner landing on own tile pays nothing
+- [x] **PROP-03**: Visitor who can't afford rent: give all cash to owner, then sent to Prison (independent property-default mechanic — not shared with PRISON path)
 - [ ] **PROP-04**: Host board tile label updates to "[PlayerName]'s Apartment" / "[PlayerName]'s House" upon purchase; reverts to default name if ownership mechanic ever clears (future-proofing)
 
 ### Prison
@@ -200,7 +200,8 @@
 | LOOP-01–07 | Phase 3 | Pending |
 | ECON-01–10 | Phase 4 | Pending |
 | LIFE-01–11 | Phase 5 | Pending |
-| PROP-01–04 | Phase 7 | Pending |
+| PROP-01–03 | Phase 7 | Complete (07-02) |
+| PROP-04 | Phase 7 | Pending |
 | PRISON-01–06 | Phase 6 | Pending |
 | STOMP-01–02 | Phase 6 | Pending |
 | COLL-01–06 | Phase 7 | Pending |

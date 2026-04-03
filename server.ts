@@ -1143,7 +1143,7 @@ HEARTBEAT_LOOP.unref();
 
 // ── Start ──────────────────────────────────────────────────────────────────
 httpServer.listen(PORT, () => {
-  console.log(`GIG server running on http://localhost:${PORT}`);
+  console.log(`Modern Careers server running on http://localhost:${PORT}`);
 });
 
 // ── Exports (used by tests) ────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-# GIG: Game of Inevitable Grind
+# Modern Careers
 
 A Jackbox-style multiplayer party game. Host plays on a big screen; players join on their phones. No install required for players — just a browser.
 

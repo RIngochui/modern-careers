@@ -14,7 +14,7 @@ progress:
   percent: 75
 ---
 
-# Project State: GIG: Game of Inevitable Grind
+# Project State: Modern Careers
 
 **Last updated:** 2026-04-01 after completing Phase 4 Plan 02 (INVESTMENT_POOL and CRYPTO tile handlers; ECON-02 and ECON-06 GREEN)
 

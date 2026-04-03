@@ -365,7 +365,7 @@ socket.on('ping', () => { socket.emit('pong'); });
     const center = document.createElement('div');
     center.id = 'board-center';
     center.style.cssText = 'grid-column:2/11;grid-row:2/11;background:#0d0d1e;border-radius:4px;display:flex;align-items:center;justify-content:center;';
-    center.innerHTML = '<span style="font-size:1.4rem;font-weight:bold;color:#f0c040;letter-spacing:0.1em;">GIG</span>';
+    center.innerHTML = '<span style="font-size:1.4rem;font-weight:bold;color:#f0c040;letter-spacing:0.1em;">Modern Careers</span>';
     track.appendChild(center);
 
     // Assign colors and initial positions

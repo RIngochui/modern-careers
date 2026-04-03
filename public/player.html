@@ -46,6 +46,55 @@
     #roll-btn:not(:disabled):active {
       transform: scale(0.97);
     }
+    /* Stat grid (Phase 5: replaces #money-display) */
+    #stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 12px;
+      padding: 12px;
+      background: #16213e;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .stat-value {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #eee;
+      font-family: monospace;
+    }
+    /* Active tile instruction panel */
+    #active-tile-instruction {
+      padding: 12px 16px;
+      background: #16213e;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+    #tile-name-display {
+      font-size: 0.875rem;
+      font-family: monospace;
+      color: #f0c040;
+      margin: 0 0 6px 0;
+      font-weight: 600;
+    }
+    #tile-instruction-text {
+      font-size: 0.875rem;
+      color: #aaa;
+      margin: 0;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -146,14 +195,37 @@
       ">Roll Dice</button>
     </div>
 
-    <div id="money-display" style="
-      text-align:center;
-      font-size:1rem;
-      font-family:monospace;
-      font-weight:600;
-      color:#eee;
-      margin-top:8px;
-    ">$50,000</div>
+    <div id="stat-grid">
+      <div class="stat-item">
+        <span class="stat-label">Money</span>
+        <span class="stat-value" id="stat-money">$10,000</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Fame</span>
+        <span class="stat-value" id="stat-fame">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Happiness</span>
+        <span class="stat-value" id="stat-happiness">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">HP</span>
+        <span class="stat-value" id="stat-hp">10</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Degree</span>
+        <span class="stat-value" id="stat-degree">None</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Career</span>
+        <span class="stat-value" id="stat-career">None</span>
+      </div>
+    </div>
+
+    <div id="active-tile-instruction">
+      <p id="tile-name-display">Currently on: —</p>
+      <p id="tile-instruction-text"></p>
+    </div>
 
     <div id="last-roll-display" style="
       text-align:center;

@@ -78,6 +78,7 @@ export interface GameRoom {
   turnHistory: unknown[];
   createdAt: number;
   startedAt: number | null;
+  propertyOwners: Map<number, string>;
 }
 
 export interface RateLimit {
@@ -169,7 +170,8 @@ const TURN_PHASES = {
   MID_ROLL: 'MID_ROLL',
   LANDED: 'LANDED',
   TILE_RESOLVING: 'TILE_RESOLVING',
-  WAITING_FOR_NEXT_TURN: 'WAITING_FOR_NEXT_TURN'
+  WAITING_FOR_NEXT_TURN: 'WAITING_FOR_NEXT_TURN',
+  WAITING_FOR_PROPERTY_DECISION: 'WAITING_FOR_PROPERTY_DECISION'
 } as const;
 
 const STARTING_MONEY = 10000;
@@ -280,7 +282,8 @@ function createGameRoom(roomCode: string, hostSocketId: string): GameRoom {
     cleanupTimer: null,
     turnHistory: [],
     createdAt: Date.now(),
-    startedAt: null
+    startedAt: null,
+    propertyOwners: new Map<number, string>()
   };
 }
 
@@ -425,6 +428,7 @@ function getFullState(room: GameRoom, requestingSocketId: string | null = null):
       lotteryPool: room.sharedResources.lotteryPool,
     },
     turnHistory: room.turnHistory,
+    propertyOwners: Object.fromEntries(room.propertyOwners),
     timestamp: Date.now()
   };
 }

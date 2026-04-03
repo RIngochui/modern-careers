@@ -542,6 +542,50 @@ socket.on('ping', () => { socket.emit('pong'); });
     }
     if (state.currentTurnPlayer) currentPlayerId = state.currentTurnPlayer;
     renderAllDots();
+    // Update status badges (Hospital/Prison/Japan) on player dots
+    if (state.players) {
+      for (const [socketId, player] of Object.entries(state.players as any)) {
+        const p = player as any;
+        const dot = document.querySelector(`.player-dot[title="${socketId}"]`) as HTMLElement;
+        if (dot) {
+          const status = p.inHospital ? '[H]' : p.inPrison ? '[P]' : p.inJapan ? '[J]' : '';
+          dot.title = socketId + (status ? ` ${status}` : '');
+        }
+      }
+    }
+  });
+
+  // ── Phase 6: Hospital event handlers (host screen) ───────────────────
+
+  socket.on('hospital-entered', ({ playerName, newHp }: { playerName: string; reason: string; newHp: number }) => {
+    addTurnHistory(`${playerName} → Hospital (HP: ${newHp})`);
+  });
+
+  socket.on('hospital-escaped', ({ playerName, escapeRoll }: { playerName: string; escapeRoll: number; hpGained: number; payment: number; recipientRole: string; newHp: number; newMoney: number }) => {
+    addTurnHistory(`${playerName} escaped Hospital (rolled ${escapeRoll})`);
+  });
+
+  // ── Phase 6: Prison event handlers (host screen) ─────────────────────
+
+  socket.on('prison-entered', ({ playerName }: { playerName: string }) => {
+    addTurnHistory(`${playerName} → Prison`);
+  });
+
+  socket.on('prison-escaped', ({ playerName }: { playerName: string; roll?: number; method?: string; newPosition: number }) => {
+    addTurnHistory(`${playerName} escaped Prison`);
+  });
+
+  // ── Phase 6: Japan Trip event handlers (host screen) ─────────────────
+
+  socket.on('japan-landed', ({ playerName }: { playerName: string; happinessGained: number; newHappiness: number }) => {
+    addTurnHistory(`${playerName} → Japan Trip (+1 Happiness)`);
+  });
+
+  // ── Phase 6: Goomba Stomp event handler (host screen) ────────────────
+
+  socket.on('goomba-stomped', ({ stomperName, stompedNames, destination }: { stomperName: string; stompedNames: string[]; isCopStomp: boolean; destination: number }) => {
+    const destLabel = destination === 10 ? 'Prison' : 'Japan Trip';
+    addTurnHistory(`STOMP! ${stomperName} → stomped ${stompedNames.join(', ')} to ${destLabel}`);
   });
 
 })();
@@ -709,6 +753,116 @@ socket.on('ping', () => { socket.emit('pong'); });
 
     // Restore text after brief delay (server confirms via move-token)
     setTimeout(() => { rollBtn.textContent = 'Roll Dice'; }, 1000);
+  });
+
+  // ── Phase 6: Status banner helpers ───────────────────────────────────
+
+  const statusBannerEl = document.getElementById('status-banner') as HTMLElement | null;
+  function showStatusBanner(message: string, color: string): void {
+    if (!statusBannerEl) return;
+    statusBannerEl.textContent = message;
+    statusBannerEl.style.display = 'block';
+    statusBannerEl.style.background = color;
+  }
+  function clearStatusBanner(): void {
+    if (!statusBannerEl) return;
+    statusBannerEl.style.display = 'none';
+    statusBannerEl.textContent = '';
+  }
+
+  // ── Phase 6: Hospital event handlers (player screen) ─────────────────
+
+  socket.on('hospital-entered', ({ playerName, newHp }: { playerName: string; reason: string; newHp: number }) => {
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      showStatusBanner(`You've been hospitalized! HP: ${newHp}. Roll to escape or pay 1/2 Salary.`, '#dc2626');
+    }
+    if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} sent to Hospital (HP: ${newHp})`;
+  });
+
+  socket.on('hospital-stayed', ({ playerName, escapeRoll }: { playerName: string; escapeRoll: number }) => {
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      showStatusBanner(`Escape failed (rolled ${escapeRoll}). Still in Hospital.`, '#dc2626');
+    }
+  });
+
+  socket.on('hospital-escaped', ({ playerName, escapeRoll, hpGained, payment, newHp, newMoney }: { playerName: string; escapeRoll: number; hpGained: number; payment: number; recipientRole: string; newHp: number; newMoney: number }) => {
+    clearStatusBanner();
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      if (lastRollDisplay) lastRollDisplay.textContent = `Escaped! Rolled ${escapeRoll}. +${hpGained} HP. Paid $${payment.toLocaleString()}.`;
+      if (statHpEl) statHpEl.textContent = String(newHp);
+      if (statMoneyEl) statMoneyEl.textContent = '$' + newMoney.toLocaleString();
+    }
+  });
+
+  // ── Phase 6: Prison event handlers (player screen) ───────────────────
+
+  socket.on('prison-entered', ({ playerName }: { playerName: string }) => {
+    if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} sent to Prison!`;
+    // Cards still allowed in prison — no block message shown
+  });
+
+  socket.on('prison-stayed', ({ playerName, roll }: { playerName: string; roll: number }) => {
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      if (lastRollDisplay) lastRollDisplay.textContent = `Still in Prison (rolled ${roll}). Need 9, 11, or 12 to escape.`;
+    }
+  });
+
+  socket.on('prison-escaped', ({ playerName, newPosition }: { playerName: string; roll?: number; method?: string; newPosition: number }) => {
+    if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} escaped Prison! Moving to tile ${newPosition}.`;
+  });
+
+  socket.on('prison-cop-immune', ({ playerName }: { playerName: string }) => {
+    if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} is a Cop — immune to Prison!`;
+  });
+
+  // ── Phase 6: Japan Trip event handlers (player screen) ───────────────
+
+  socket.on('japan-landed', ({ playerName, happinessGained, newHappiness }: { playerName: string; happinessGained: number; newHappiness: number }) => {
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      showStatusBanner(`Welcome to Japan! +${happinessGained} Happiness. Stay next turn?`, '#16a34a');
+      if (statHapEl) statHapEl.textContent = String(newHappiness);
+    }
+  });
+
+  socket.on('japan-forced-leave', ({ playerName, roll, happinessGained, costPaid }: { playerName: string; roll: number; newPosition: number; happinessGained: number; costPaid: number }) => {
+    clearStatusBanner();
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      if (lastRollDisplay) lastRollDisplay.textContent = `Forced to leave Japan (rolled ${roll})! +${happinessGained} Happiness, paid $${costPaid.toLocaleString()}.`;
+    }
+  });
+
+  socket.on('japan-stay-choice', ({ roll, happinessGained, costPaid }: { playerName: string; roll: number; happinessGained: number; costPaid: number }) => {
+    if (mySocketId && currentTurnPlayerId !== mySocketId) return; // only show to active player
+    // Show stay/leave buttons
+    const choiceDiv = document.getElementById('japan-choice') as HTMLElement | null;
+    if (choiceDiv) {
+      choiceDiv.style.display = 'block';
+      choiceDiv.innerHTML = `
+        <p>Japan Turn: +${happinessGained} Happiness, paid $${costPaid.toLocaleString()}. Rolled ${roll}.</p>
+        <button id="japan-stay-btn">Stay in Japan</button>
+        <button id="japan-leave-btn">Leave Japan</button>
+      `;
+      document.getElementById('japan-stay-btn')?.addEventListener('click', () => {
+        socket.emit('japan-stay');
+        choiceDiv.style.display = 'none';
+      }, { once: true });
+      document.getElementById('japan-leave-btn')?.addEventListener('click', () => {
+        socket.emit('japan-leave');
+        choiceDiv.style.display = 'none';
+      }, { once: true });
+    } else {
+      // Fallback: confirm dialog if DOM element not present
+      const stay = window.confirm(`Japan Turn: +${happinessGained} Happiness, paid $${costPaid.toLocaleString()}. Rolled ${roll}. Stay in Japan? (OK=Stay, Cancel=Leave)`);
+      socket.emit(stay ? 'japan-stay' : 'japan-leave');
+    }
+  });
+
+  // ── Phase 6: Goomba Stomp event handler (player screen) ──────────────
+
+  socket.on('goomba-stomped', ({ stomperName, stompedNames, destination }: { stomperName: string; stompedNames: string[]; isCopStomp: boolean; destination: number }) => {
+    const destLabel = destination === 10 ? 'Prison' : 'Japan Trip';
+    const msg = `${stomperName} stomped ${stompedNames.join(', ')}! Sent to ${destLabel}!`;
+    if (lastRollDisplay) lastRollDisplay.textContent = msg;
   });
 
 })();

@@ -25,7 +25,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Fun, chaotic, real-time multiplayer party experience playable in a browser — host on big screen, players on phones, no install required.
-**Current focus:** Phase 06 — hospital-prison-japan-trip (In Progress — Plans 01-02 complete)
+**Current focus:** Phase 06 — hospital-prison-japan-trip
 
 ## Current Status
 

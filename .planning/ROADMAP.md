@@ -149,23 +149,32 @@ Plans:
 
 ### Phase 7: Properties & Housing
 
-**Goal:** Apartment (Tile 6) and House (Tile 25) ownership with rent collection and prison-on-default.
+**Goal:** Apartment (Tile 6) and House (Tile 25) ownership with rent collection and property-default-to-prison.
 
 **Key deliverables:**
-1. Apartment: buy for 50,000; rent = 25% Salary; can't pay → give all cash + go to Prison
-2. House: buy for 100,000; rent = 50% Salary; can't pay → give all cash + go to Prison
-3. Landlord hat character layer on owner
+1. Apartment (Tile 6): buy for 50,000 via player choice prompt; rent = 25% of visitor's Salary paid to owner
+2. House (Tile 25): buy for 100,000 via player choice prompt; rent = 50% of visitor's Salary paid to owner
+3. Can't-pay mechanic: give all cash to owner → sent to Prison (independent property mechanic, not shared with Phase 6 prison code)
+4. Host board tile label updates to "[PlayerName]'s Apartment" / "[PlayerName]'s House" on purchase (no landlord hat)
 
 **Requirements:** PROP-01..04
 
 ### Success Criteria
 
-- [ ] Apartment buyable for 50,000 when unowned
-- [ ] House buyable for 100,000 when unowned
-- [ ] Rent deducted correctly from visitor, added to owner
-- [ ] Visitor who can't pay: all cash → owner, then sent to Prison
-- [ ] Only one owner per property; persists through game
-- [ ] Landlord hat visible on owner's character
+- [ ] Apartment buyable for 50,000 when unowned (player choice prompt)
+- [ ] House buyable for 100,000 when unowned (player choice prompt)
+- [ ] Owner landing on own property: no charge, advance turn
+- [ ] Rent deducted correctly from visitor's Salary (25% / 50%), added to owner
+- [ ] Visitor who can't afford rent: all cash → owner, then sent to Prison via independent property mechanic
+- [ ] Only one owner per property; ownership persists through game
+- [ ] Host board tile label shows "[PlayerName]'s Apartment" / "[PlayerName]'s House" after purchase
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — TDD Wave 0: write failing tests for property buy, rent, can't-pay default, owner self-land, pass on buying (8 tests, all RED)
+- [ ] 07-02-PLAN.md — Server implementation: GameRoom.properties field, WAITING_FOR_PROPERTY_DECISION turn phase, handlePropertyTile, handleBuyProperty, buy-property socket handler
+- [ ] 07-03-PLAN.md — Client UI: property-buy-prompt handler (buy/pass buttons), property-purchased (tile label update), property-rent-paid, property-default notifications
 
 ---
 
@@ -319,8 +328,8 @@ Plans:
 | 3. Core Game Loop | Complete | 2026-04-01 |
 | 4. Economic Tiles (superseded) | Complete | 2026-04-01 |
 | 5. Board Reset | Complete | 2026-04-03 |
-| 6. Hospital, Prison & Japan Trip | Not started | — |
-| 7. Properties & Housing | Not started | — |
+| 6. Hospital, Prison & Japan Trip | Complete | 2026-04-03 |
+| 7. Properties & Housing | In progress | — |
 | 8. University & Career Paths | Not started | — |
 | 9. Opportunity Knocks | Not started | — |
 | 10. Economy & Life Tiles | Not started | — |
@@ -342,3 +351,4 @@ Plans:
 *Roadmap created: 2026-03-29*
 *Redesigned: 2026-04-02 — full board reset based on finalized game design doc*
 *Phase 6 planned: 2026-04-03 — Hospital, Prison, Japan Trip, Goomba Stomp, Doctor role*
+*Phase 7 planned: 2026-04-03 — Properties & Housing (3 plans, 3 waves)*

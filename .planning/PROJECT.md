@@ -21,6 +21,7 @@ Fun, chaotic, real-time multiplayer party experience that plays in a browser wit
 - ✓ All 10 economic tile server-side handlers: Sports Betting, Investment Pool, COVID Stimulus, Tax Audit, Scratch Ticket, Crypto, Nepotism, Union Strike, Ponzi Scheme, Student Loan Payment — Phase 4
 - ✓ Hospital escape/payment, Doctor role immunity, Prison escape/bail/prisonTurns counter, Japan Trip stay loop, Goomba Stomp occupancy routing — Phase 6
 - ✓ Client event handlers for all Phase 6 mechanics (status banners, stomp notifications, Japan choice UI, host prison badges [P:N]) — Phase 6
+- ✓ Apartment (Tile 6) and House (Tile 25) ownership — buy prompt, rent collection (25%/50% salary), can't-pay default to Prison, host board tile label shows owner name — Phase 7
 
 ### Active
 
@@ -101,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 after Phase 6 completion — Hospital, Prison, Japan Trip, Goomba Stomp all implemented and verified (19/19)*
+*Last updated: 2026-04-03 after Phase 7 completion — Apartment & House ownership, rent, property-default mechanic implemented and verified (7/7)*

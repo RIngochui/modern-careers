@@ -235,6 +235,40 @@
       font-family:monospace;
       min-height:1.2em;
     "></div>
+
+    <!-- Property Buy/Pass Choice (Phase 7) -->
+    <div id="property-choice" style="
+      display:none;
+      text-align:center;
+      padding:16px;
+      margin-top:12px;
+      background:#16213e;
+      border:2px solid #f0c040;
+      border-radius:8px;
+    ">
+      <span id="property-choice-msg" style="display:block;font-size:1rem;color:#eee;margin-bottom:12px;"></span>
+      <button id="btn-buy-property" style="
+        padding:12px 24px;
+        font-size:1rem;
+        font-weight:700;
+        background:#4ade80;
+        color:#1a1a2e;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+        margin-right:8px;
+      ">Buy</button>
+      <button id="btn-pass-property" style="
+        padding:12px 24px;
+        font-size:1rem;
+        font-weight:700;
+        background:#f87171;
+        color:#1a1a2e;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+      ">Pass</button>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

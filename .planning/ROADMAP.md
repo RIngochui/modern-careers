@@ -15,7 +15,7 @@
 - [x] **Phase 4: Economic Tiles** — First tile pass; superseded by Phase 5 board reset (completed 2026-04-01)
 - [x] **Phase 5: Board Reset** — Rebuild BOARD_TILES to final 40-tile design, add HP system, update win condition, stub all tile types (completed 2026-04-03)
 - [ ] **Phase 6: Hospital, Prison & Japan Trip** — HP→Hospital trigger, roll-to-leave, Doctor role, Prison escape, Japan Trip, Goomba Stomp
-- [ ] **Phase 7: Properties & Housing** — Apartment (Tile 6), House (Tile 25), buy/rent/prison-on-default mechanics
+- [ ] **Phase 7: Properties & Housing** — Apartment (Tile 6), House (Tile 25), buy/rent/prison-on-default mechanics (Plan 01 RED tests complete)
 - [ ] **Phase 8: University & Career Paths** — University path (7 degrees), 9 career paths with entry requirements and event tiles
 - [ ] **Phase 9: Opportunity Knocks** — Card deck system, draw mechanics, card effects, hand management
 - [ ] **Phase 10: Economy & Life Tiles** — All remaining tiles: Gym, Lottery, COVID Stimulus, Revolution, Ozempic, Yacht, Instagram, Art Gallery, Cigarette Break, Pay Taxes, Sports Betting, Nepotism, Streamer entry
@@ -166,6 +166,11 @@ Plans:
 - [ ] Visitor who can't pay: all cash → owner, then sent to Prison
 - [ ] Only one owner per property; persists through game
 - [ ] Landlord hat visible on owner's character
+
+**Plans:** 1/1 plans complete (RED phase only)
+
+Plans:
+- [x] 07-01-PLAN.md — TDD Wave 0: write 8 failing tests for property buy/rent/default mechanics
 
 ---
 
@@ -320,7 +325,7 @@ Plans:
 | 4. Economic Tiles (superseded) | Complete | 2026-04-01 |
 | 5. Board Reset | Complete | 2026-04-03 |
 | 6. Hospital, Prison & Japan Trip | Not started | — |
-| 7. Properties & Housing | Not started | — |
+| 7. Properties & Housing | In Progress (Plan 01 RED) | — |
 | 8. University & Career Paths | Not started | — |
 | 9. Opportunity Knocks | Not started | — |
 | 10. Economy & Life Tiles | Not started | — |

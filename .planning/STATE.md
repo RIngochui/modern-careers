@@ -4,21 +4,21 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: 1
 status: Executing Phase 05
-stopped_at: Completed 05-board-reset 05-01-PLAN.md (TDD RED test infrastructure)
-last_updated: "2026-04-03T02:54:19.752Z"
+stopped_at: Completed 05-board-reset 05-02-PLAN.md (server core refactor, BOARD_TILES rebuild)
+last_updated: "2026-04-03T03:04:44.602Z"
 progress:
   total_phases: 12
   completed_phases: 4
   total_plans: 18
-  completed_plans: 16
-  percent: 89
+  completed_plans: 17
+  percent: 94
 ---
 
 # Project State: Modern Careers
 
-**Last updated:** 2026-04-01 after completing Phase 4 Plan 02 (INVESTMENT_POOL and CRYPTO tile handlers; ECON-02 and ECON-06 GREEN)
+**Last updated:** 2026-04-03 after completing Phase 5 Plan 02 (server core refactor: BOARD_TILES rebuild, HP/salary model, checkWinCondition, dead handlers removed)
 
-**Progress:** [█████████░] 89%
+**Progress:** [█████████░] 94%
 
 ## Project Reference
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 ## Current Status
 
 **Phase:** 5
-**Current Plan:** 1
-**Stopped at:** Completed 05-board-reset 05-01-PLAN.md (TDD RED test infrastructure)
-**Next action:** Execute plan 04-03 (social economic tiles: Nepotism, Union Strike)
+**Current Plan:** 2
+**Stopped at:** Completed 05-board-reset 05-02-PLAN.md (server core refactor, BOARD_TILES rebuild)
+**Next action:** Execute plan 05-03 (UI updates: HP/salary stat grid, tile tooltips on host board)
 
 ## Phase Progress
 
@@ -77,6 +77,10 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 2026-04-01 | Negative money allowed for INVESTMENT_POOL loss (no Math.max floor) | Adds dramatic debt mechanic; aligns with RESEARCH open question #3 |
 | 2026-04-01 | CRYPTO first landing invests all current money (all-in default) | Simple implementation; future client choice layer can limit amount |
 | 2026-04-01 | cryptoInvestments reset unconditionally to 0 after payout | Avoids infinite second-landing state (Pitfall 3 from RESEARCH.md) |
+| 2026-04-03 | lotteryPool: 50000 replaces investmentPool/cryptoInvestments in SharedResources | Phase 5 model; lottery tile implemented in Phase 8 |
+| 2026-04-03 | checkWinCondition: Life Total >= 60 AND formula threshold checks | D-14 through D-16 from CONTEXT.md |
+| 2026-04-03 | SPORTS_BETTING updated: fixed 10,000 stake, win 60,000 on roll=1 (removed all-in) | Phase 5 redesign per GAME-DESIGN.md |
+| 2026-04-03 | COVID_STIMULUS stubbed in Phase 5; HP→cash mechanic deferred to Phase 10 | D-22 from CONTEXT.md |
 
 ## Performance Metrics
 
@@ -93,3 +97,4 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | Phase 04-economic-tiles P00 | 4min | 3 tasks | 2 files |
 | 04-economic-tiles | 02 | 3min | 2 | 2 |
 | Phase 05-board-reset P01 | 2min | 2 tasks | 3 files |
+| Phase 05-board-reset P02 | 9min | 2 tasks | 4 files |

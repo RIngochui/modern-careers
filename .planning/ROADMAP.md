@@ -102,11 +102,11 @@
 - [ ] Player screen displays money, happiness, fame, HP, degree, career history
 - [ ] Host screen displays board with tile labels and instructions
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 05-01-PLAN.md — Test infrastructure: write board-layout.test.ts (TDD Wave 0), delete tiles-econ.test.ts, update STARTING_MONEY assertions
-- [ ] 05-02-PLAN.md — Server refactor: rebuild BOARD_TILES (40 tiles), update Player model (hp/salary), remove dead Phase 4 handlers, add stubs, checkWinCondition
+- [x] 05-02-PLAN.md — Server refactor: rebuild BOARD_TILES (40 tiles), update Player model (hp/salary), remove dead Phase 4 handlers, add stubs, checkWinCondition
 - [ ] 05-03-PLAN.md — UI update: player stat grid (2x3), active tile instructions, host board tile names + hover tooltips
 
 ---

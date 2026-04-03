@@ -118,12 +118,12 @@ describe('LOOP-04 tile dispatch', () => {
   it('corner tiles are at correct positions', () => {
     expect(BOARD_TILES[0].type).toBe('PAYDAY');
     expect(BOARD_TILES[10].type).toBe('PRISON');
-    expect(BOARD_TILES[20].type).toBe('PARK_BENCH');
+    expect(BOARD_TILES[20].type).toBe('JAPAN_TRIP');
     expect(BOARD_TILES[30].type).toBe('HOSPITAL');
   });
 
-  it('APARTMENT is at position 5, HOUSE at position 25', () => {
-    expect(BOARD_TILES[5].type).toBe('APARTMENT');
+  it('APARTMENT is at position 6, HOUSE at position 25', () => {
+    expect(BOARD_TILES[6].type).toBe('APARTMENT');
     expect(BOARD_TILES[25].type).toBe('HOUSE');
   });
 
@@ -141,37 +141,28 @@ describe('LOOP-04 tile dispatch', () => {
     expect(BOARD_TILES.length).toBe(40);
   });
 
-  it('exactly 10 CAREER_ENTRANCE tiles', () => {
-    const careerEntrances = BOARD_TILES.filter(t => t.type === 'CAREER_ENTRANCE');
-    expect(careerEntrances.length).toBe(10);
+  it('has career-path entry tiles (Phase 5 board: MCDONALDS, FINANCE_BRO, SUPPLY_TEACHER, COP, DEI_OFFICER, TECH_BRO, RIGHT_WING_GRIFTER, STARVING_ARTIST, STREAMER)', () => {
+    const careerTypes = ['MCDONALDS', 'FINANCE_BRO', 'SUPPLY_TEACHER', 'COP', 'DEI_OFFICER', 'TECH_BRO', 'RIGHT_WING_GRIFTER', 'STARVING_ARTIST', 'STREAMER'];
+    const careerTiles = BOARD_TILES.filter(t => careerTypes.includes(t.type));
+    expect(careerTiles.length).toBe(9);
   });
 
-  it('all CAREER_ENTRANCE tiles have a careerName', () => {
-    const careerEntrances = BOARD_TILES.filter(t => t.type === 'CAREER_ENTRANCE');
-    for (const tile of careerEntrances) {
-      expect(tile.careerName).toBeDefined();
-      expect(typeof tile.careerName).toBe('string');
+  it('has OPPORTUNITY_KNOCKS tiles (Phase 5 board: 11 entries)', () => {
+    const opportunities = BOARD_TILES.filter(t => t.type === 'OPPORTUNITY_KNOCKS');
+    expect(opportunities.length).toBe(11);
+  });
+
+  it('all tiles have a description string', () => {
+    for (const tile of BOARD_TILES) {
+      expect(typeof tile.description).toBe('string');
     }
   });
 
-  it('exactly 10 OPPORTUNITY tiles', () => {
-    const opportunities = BOARD_TILES.filter(t => t.type === 'OPPORTUNITY');
-    expect(opportunities.length).toBe(10);
-  });
-
-  it('all OPPORTUNITY tiles have a careerName', () => {
-    const opportunities = BOARD_TILES.filter(t => t.type === 'OPPORTUNITY');
-    for (const tile of opportunities) {
-      expect(tile.careerName).toBeDefined();
-      expect(typeof tile.careerName).toBe('string');
-    }
-  });
-
-  it('exactly 4 corner tiles (PAYDAY + PRISON + PARK_BENCH + HOSPITAL)', () => {
+  it('exactly 3 corner tiles (PAYDAY + PRISON + HOSPITAL)', () => {
     const corners = BOARD_TILES.filter(t =>
-      t.type === 'PAYDAY' || t.type === 'PRISON' || t.type === 'PARK_BENCH' || t.type === 'HOSPITAL'
+      t.type === 'PAYDAY' || t.type === 'PRISON' || t.type === 'HOSPITAL'
     );
-    expect(corners.length).toBe(4);
+    expect(corners.length).toBe(3);
   });
 
   it('exactly 2 housing tiles (APARTMENT + HOUSE)', () => {

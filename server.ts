@@ -818,6 +818,129 @@ function advanceTurn(
 }
 
 
+// ── Phase 7: Property helpers ─────────────────────────────────────────────
+
+/**
+ * Property cost lookup by tile index.
+ */
+function getPropertyCost(tileIndex: number): number {
+  const tileType = BOARD_TILES[tileIndex]?.type;
+  return tileType === 'HOUSE' ? 100000 : 50000;
+}
+
+/**
+ * Property rent rate lookup by tile index.
+ */
+function getPropertyRentRate(tileIndex: number): number {
+  const tileType = BOARD_TILES[tileIndex]?.type;
+  return tileType === 'HOUSE' ? 0.50 : 0.25;
+}
+
+/**
+ * Handle landing on APARTMENT (tile 6) or HOUSE (tile 25).
+ * - Unowned: return { action: 'buy_prompt', price } and emit property-buy-prompt
+ * - Owned by visitor (self-land): no charge, return { action: 'self_land' }
+ * - Owned by someone else: charge rent, or default to prison if can't pay
+ */
+function handlePropertyLanding(
+  room: GameRoom, roomCode: string, playerId: string
+): { action: string; price?: number; rentAmount?: number } {
+  const player = room.players.get(playerId)!;
+  const tileIndex = player.position;
+  const ownerId = room.propertyOwners.get(tileIndex);
+
+  // Case 1: Unowned — prompt player to buy
+  if (ownerId === undefined) {
+    const cost = getPropertyCost(tileIndex);
+    room.turnPhase = TURN_PHASES.WAITING_FOR_PROPERTY_DECISION;
+    io.to(playerId).emit('property-buy-prompt', {
+      tileIndex,
+      tileName: BOARD_TILES[tileIndex].name,
+      cost,
+      currentMoney: player.money
+    });
+    return { action: 'buy_prompt', price: cost };
+  }
+
+  // Case 2: Owner lands on own property — no charge
+  if (ownerId === playerId) {
+    return { action: 'self_land' };
+  }
+
+  // Case 3: Visitor lands on owned property — pay rent
+  const owner = room.players.get(ownerId)!;
+  const rentRate = getPropertyRentRate(tileIndex);
+  const rentAmount = Math.floor(player.salary * rentRate);
+
+  if (player.money < rentAmount) {
+    // Can't-pay default: all cash to owner, visitor to Prison
+    const cashTransferred = player.money;
+    owner.money += cashTransferred;
+    player.money = 0;
+    // Independent prison mechanic — do NOT call handlePrisonEscape/handlePrisonBail
+    player.inPrison = true;
+    player.prisonTurns = 0;
+    player.inHospital = false;
+    player.inJapan = false;
+    player.position = 10;
+
+    io.to(roomCode).emit('property-default', {
+      tileIndex,
+      visitorName: player.name,
+      ownerName: owner.name,
+      cashTransferred
+    });
+    return { action: 'default' };
+  }
+
+  // Normal rent payment
+  player.money -= rentAmount;
+  owner.money += rentAmount;
+
+  io.to(roomCode).emit('property-rent-paid', {
+    tileIndex,
+    visitorName: player.name,
+    ownerName: owner.name,
+    rentAmount
+  });
+  return { action: 'rent_paid', rentAmount };
+}
+
+/**
+ * Handle player accepting property purchase.
+ * Deducts cost from player and records ownership on room.
+ */
+function handlePropertyBuy(
+  room: GameRoom, roomCode: string, playerId: string
+): void {
+  const player = room.players.get(playerId)!;
+  const tileIndex = player.position;
+  const cost = getPropertyCost(tileIndex);
+
+  player.money -= cost;
+  room.propertyOwners.set(tileIndex, playerId);
+
+  io.to(roomCode).emit('property-purchased', {
+    tileIndex,
+    ownerName: player.name,
+    tileName: BOARD_TILES[tileIndex].name,
+    buyerName: player.name,
+    cost
+  });
+}
+
+/**
+ * Handle player declining property purchase.
+ * Property remains unowned. Turn advances.
+ */
+function handlePropertyPass(
+  room: GameRoom, roomCode: string, playerId: string
+): void {
+  const player = room.players.get(playerId)!;
+  // No-op on property state; just advance turn
+  advanceTurn(room, roomCode, playerId, player.name, 0, player.position, player.position, 'PROPERTY_PASSED');
+}
+
 function dispatchTile(
   room: GameRoom,
   roomCode: string,
@@ -958,9 +1081,19 @@ function dispatchTile(
       break;
     }
 
-    case 'PAYDAY':
     case 'APARTMENT':
-    case 'HOUSE':
+    case 'HOUSE': {
+      // Phase 7: Property tile — buy prompt, rent, or default
+      const propResult = handlePropertyLanding(room, roomCode, playerId);
+      if (propResult.action === 'self_land' || propResult.action === 'rent_paid' || propResult.action === 'default') {
+        advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition,
+          propResult.action === 'default' ? 10 : tileIndex, tileType);
+      }
+      // buy_prompt: turn paused — waiting for buy-property socket event
+      break;
+    }
+
+    case 'PAYDAY':
     default:
       advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, tileType);
       break;
@@ -1306,6 +1439,29 @@ io.on('connection', (socket) => {
     dispatchTile(room, roomCode, socket.id, player.position, 0, 20);
   });
 
+  // ── Phase 7: Property buy decision ──────────────────────────────────────
+  socket.on('buy-property', ({ accept }: { accept: boolean }) => {
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) { socket.emit('error', { message: 'No room found' }); return; }
+    const room = getRoom(roomCode);
+    if (!room) { socket.emit('error', { message: 'Room not found' }); return; }
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_PROPERTY_DECISION) {
+      socket.emit('error', { message: 'No property decision pending' });
+      return;
+    }
+    const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+    if (socket.id !== currentPlayerId) {
+      socket.emit('error', { message: 'Not your turn' });
+      return;
+    }
+    if (accept) {
+      handlePropertyBuy(room, roomCode, socket.id);
+    }
+    const player = room.players.get(socket.id)!;
+    advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position,
+      accept ? 'PROPERTY_BOUGHT' : 'PROPERTY_PASSED');
+  });
+
   socket.on('disconnect', (reason: string) => {
     clearRateLimitState(socket.id);
     socketLastPong.delete(socket.id);
@@ -1394,6 +1550,8 @@ export {
   // Phase 6 exports
   handleHospitalEscape, handlePrisonBail, handlePrisonEscape,
   handleJapanTurnStart, checkGoombaStomp, canPlayCard,
-  checkHpAndHospitalize, handleHpCheck
+  checkHpAndHospitalize, handleHpCheck,
+  // Phase 7 exports
+  handlePropertyLanding, handlePropertyBuy, handlePropertyPass
 };
 

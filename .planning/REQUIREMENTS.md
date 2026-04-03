@@ -138,7 +138,7 @@
 
 ### Win Condition & Final Round
 
-- [ ] **WIN-01**: When a player meets their secret Success Formula (Money/Fame/Happiness totals reach their set targets), "FINAL ROUND 🚨" is announced dramatically on all screens
+- [x] **WIN-01**: When a player meets their secret Success Formula (Money/Fame/Happiness totals reach their set targets), "FINAL ROUND 🚨" is announced dramatically on all screens
 - [ ] **WIN-02**: Every other player gets exactly one more turn after the trigger
 - [ ] **WIN-03**: Triggering player moves to Retirement Home tile and is done playing
 - [ ] **WIN-04**: Any player who meets their formula during the final round also retires to Retirement Home

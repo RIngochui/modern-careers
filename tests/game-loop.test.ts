@@ -141,8 +141,8 @@ describe('LOOP-04 tile dispatch', () => {
     expect(BOARD_TILES.length).toBe(40);
   });
 
-  it('has career-path entry tiles (Phase 5 board: MCDONALDS, FINANCE_BRO, SUPPLY_TEACHER, COP, DEI_OFFICER, TECH_BRO, RIGHT_WING_GRIFTER, STARVING_ARTIST, STREAMER)', () => {
-    const careerTypes = ['MCDONALDS', 'FINANCE_BRO', 'SUPPLY_TEACHER', 'COP', 'DEI_OFFICER', 'TECH_BRO', 'RIGHT_WING_GRIFTER', 'STARVING_ARTIST', 'STREAMER'];
+  it('has career-path entry tiles (Phase 8 board: MCDONALDS, FINANCE_BRO, SUPPLY_TEACHER, COP, PEOPLE_AND_CULTURE, TECH_BRO, RIGHT_WING_GRIFTER, STARVING_ARTIST, STREAMER)', () => {
+    const careerTypes = ['MCDONALDS', 'FINANCE_BRO', 'SUPPLY_TEACHER', 'COP', 'PEOPLE_AND_CULTURE', 'TECH_BRO', 'RIGHT_WING_GRIFTER', 'STARVING_ARTIST', 'STREAMER'];
     const careerTiles = BOARD_TILES.filter(t => careerTypes.includes(t.type));
     expect(careerTiles.length).toBe(9);
   });

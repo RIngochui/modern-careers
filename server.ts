@@ -57,8 +57,51 @@ export interface Player {
   isDoctor: boolean;
   isCop: boolean;
   skipNextPayday: boolean;
+  // Phase 8: Career path state
+  inPath: boolean;
+  currentPath: string | null;
+  pathTile: number;
+  isArtist: boolean;
+  copWaitTurns: number;
+  streamerAttemptsUsed: number;
   // Heartbeat
   lastPong: number;
+}
+
+export interface PathTile {
+  event: string;
+  fame?: number;
+  happiness?: number;
+  hp?: number;
+  cash?: number;
+  salary?: number;
+  special?: 'HOSPITAL' | 'PRISON' | 'SKIP_TURN' | 'CANCEL_PATH' | 'SENT_TO_PAYDAY';
+  diceMultiplier?: number;
+  diceTarget?: 'cash' | 'salary' | 'fame';
+  salaryMultiplierCash?: number;
+  pvpEffects?: Array<{ stat: string; amount: number; target: 'choose_one' | 'all' | 'all_others' }>;
+}
+
+export interface CareerPath {
+  key: string;
+  displayName: string;
+  boardTile: number;
+  exitTile: number;
+  tiles: PathTile[];
+  entry: {
+    degree?: string | string[];
+    cashCost?: number;
+    altCashCost?: number;
+    altStatCost?: { stat: 'fame' | 'happiness'; amount: number };
+    waitTurns?: number;
+    rollToEnter?: { target: number; dieCost: number; maxAttempts: number };
+    freeEntry?: boolean;
+    nepotism?: boolean;
+  };
+  completion: {
+    roleUnlock?: 'isCop' | 'isArtist';
+    experienceCard: boolean;
+  };
 }
 
 export interface SharedResources {
@@ -174,7 +217,10 @@ const TURN_PHASES = {
   TILE_RESOLVING: 'TILE_RESOLVING',
   WAITING_FOR_NEXT_TURN: 'WAITING_FOR_NEXT_TURN',
   WAITING_FOR_PROPERTY_DECISION: 'WAITING_FOR_PROPERTY_DECISION',
-  WAITING_FOR_STOMP_DECISION: 'WAITING_FOR_STOMP_DECISION'
+  WAITING_FOR_STOMP_DECISION: 'WAITING_FOR_STOMP_DECISION',
+  WAITING_FOR_CAREER_DECISION: 'WAITING_FOR_CAREER_DECISION',
+  WAITING_FOR_STREAMER_ROLL: 'WAITING_FOR_STREAMER_ROLL',
+  WAITING_FOR_DEGREE_CHOICE: 'WAITING_FOR_DEGREE_CHOICE'
 } as const;
 
 const STARTING_MONEY = 10000;
@@ -207,7 +253,7 @@ export const BOARD_TILES: Array<{ type: string; name: string; description: strin
   { type: 'LOTTERY',               name: 'Lottery',             description: 'Pool starts at 50,000. Roll 2d6 (costs 10,000/roll, max 3). Pair = win pool.' },
   { type: 'JAPAN_TRIP',            name: 'Japan Trip',          description: '+1 Happiness on land. Each turn staying: +2 Happiness, pay Salary/5. Roll >8 = must leave.' },
   { type: 'OPPORTUNITY_KNOCKS',    name: 'Opportunity Knocks',  description: 'Draw an Opportunity card.' },
-  { type: 'DEI_OFFICER',           name: 'DEI Officer',         description: 'Career path entry. Requires Gender Studies, OR lose 20 Fame, OR Nepotism.' },
+  { type: 'PEOPLE_AND_CULTURE',    name: 'People & Culture',    description: 'Career path entry. Requires Gender Studies, OR pay 15,000 + lose 5 Fame, OR Nepotism.' },
   { type: 'REVOLUTION',            name: 'Revolution',          description: 'Sum all Cash. Split evenly. Leftover → Banker.' },
   { type: 'OPPORTUNITY_KNOCKS',    name: 'Opportunity Knocks',  description: 'Draw an Opportunity card.' },
   { type: 'HOUSE',                 name: 'House',               description: 'Buy for 100,000 if unowned. Rent: pay 50% Salary to owner.' },
@@ -226,6 +272,173 @@ export const BOARD_TILES: Array<{ type: string; name: string; description: strin
   { type: 'STREAMER',              name: 'Streamer',            description: 'Career path entry. Roll a 1 (costs 10,000/attempt, max 3) OR Nepotism.' },
   { type: 'OPPORTUNITY_KNOCKS',    name: 'Opportunity Knocks',  description: 'Draw an Opportunity card.' },
 ];
+
+// ── Career Paths config ────────────────────────────────────────────────────
+
+export const CAREER_PATHS: Record<string, CareerPath> = {
+  MCDONALDS: {
+    key: 'MCDONALDS', displayName: "McDonald's", boardTile: 4, exitTile: 5,
+    tiles: [
+      { event: 'They give you a visor and a name tag.', happiness: 1 },
+      { event: 'Customer screams at you for getting their order wrong.', happiness: -2, hp: -1 },
+      { event: 'You pull a double shift with no sleep.', hp: -2, cash: 5000 },
+      { event: 'Free meal at end of shift.', happiness: 2, hp: 1 },
+      { event: 'Fight breaks out in the drive-thru and you\'re involved.', hp: -2, special: 'HOSPITAL' },
+      { event: 'Corporate visits and you get Employee of the Month.', fame: 1, happiness: 1 },
+      { event: 'PROMOTED TO MANAGER. Still no benefits.', happiness: 2, salary: 10000 },
+      { event: 'Payroll notices you forgot to clock out for 3 days.', cash: -5000 },
+    ],
+    entry: { freeEntry: true, nepotism: true },
+    completion: { experienceCard: true },
+  },
+  UNIVERSITY: {
+    key: 'UNIVERSITY', displayName: 'University', boardTile: 9, exitTile: 11,
+    tiles: [
+      { event: 'You miss orientation because you slept in.', happiness: -1 },
+      { event: 'You break up with your high school sweetheart.', happiness: -3 },
+      { event: 'Skipped class for a week straight.', special: 'SKIP_TURN' },
+      { event: 'Keg stand at a frat party goes wrong.', happiness: 2, hp: -2 },
+      { event: 'You join the track team.', hp: 2 },
+      { event: 'Pulled an all-nighter and aced the exam.', happiness: 2, hp: -1 },
+      { event: 'You did too many edibles before your final.', happiness: 3, hp: -2 },
+      { event: 'You graduate as valedictorian.', fame: 2, happiness: 4 },
+    ],
+    entry: { cashCost: 10000, nepotism: false },
+    completion: { experienceCard: false },
+  },
+  FINANCE_BRO: {
+    key: 'FINANCE_BRO', displayName: 'Finance Bro', boardTile: 12, exitTile: 13,
+    tiles: [
+      { event: 'You land your first analyst job at a Bay Street firm.', salary: 10000 },
+      { event: 'You close your first deal over golf.', cash: 15000 },
+      { event: 'You expense your "business trip" with an extra 0 and nobody notices.', cash: 10000 },
+      { event: 'Company bonus season.', diceMultiplier: 10000, diceTarget: 'cash' },
+      { event: 'SEC is asking questions about your trades.', special: 'PRISON' },
+      { event: 'Co-worker steals a massive deal.', happiness: -3 },
+      { event: 'Hedge fund bet goes sideways.', cash: -20000 },
+      { event: 'You get quoted in the Financial Post.', fame: 1 },
+      { event: 'Made partner.', fame: 3, salary: 20000 },
+    ],
+    entry: { degree: ['economics', 'business'], altCashCost: 10000, nepotism: true },
+    completion: { experienceCard: true },
+  },
+  SUPPLY_TEACHER: {
+    key: 'SUPPLY_TEACHER', displayName: 'Supply Teacher', boardTile: 15, exitTile: 16,
+    tiles: [
+      { event: 'First day, nobody tells you where anything is.', happiness: -1 },
+      { event: 'A student actually listens to you.', happiness: 2 },
+      { event: 'A parent calls to complain about your teaching style.', happiness: -2 },
+      { event: 'You get called back to the same school three days in a row.', happiness: 3, cash: 5000 },
+      { event: 'Students spend the whole class making fun of your name.', happiness: -1 },
+      { event: 'Budget cuts mean no more supply work this month.', cash: -5000 },
+      { event: 'You break up a fight between two grade 10s.', hp: -2 },
+      { event: 'School board offers you a long term occasional contract.', happiness: 4, salary: 10000 },
+    ],
+    entry: { degree: 'teaching', altCashCost: 10000, nepotism: true },
+    completion: { experienceCard: true },
+  },
+  COP: {
+    key: 'COP', displayName: 'Cop', boardTile: 18, exitTile: 21,
+    tiles: [
+      { event: 'You graduate from the police academy.', happiness: -1, hp: 3 },
+      { event: 'You rack up overtime covering short-staffed shifts.', cash: 10000 },
+      { event: 'Excessive force complaint filed against you.', fame: -3, cash: -5000 },
+      { event: 'Local news covers you pulling someone out of a burning car.', fame: 5 },
+      { event: 'You get promoted to Sergeant.', salary: 20000 },
+      { event: 'Old racist tweets get discovered and go viral.', fame: -3 },
+      { event: 'Undercover operation goes wrong.', hp: -5, special: 'CANCEL_PATH' },
+      { event: 'Donut run on duty, nobody saw.', happiness: 1 },
+      { event: 'You close a career-defining case.', fame: 3, happiness: 2 },
+    ],
+    entry: { cashCost: 15000, waitTurns: 1, nepotism: true },
+    completion: { roleUnlock: 'isCop', experienceCard: true },
+  },
+  PEOPLE_AND_CULTURE: {
+    key: 'PEOPLE_AND_CULTURE', displayName: 'People & Culture Specialist', boardTile: 22, exitTile: 24,
+    tiles: [
+      { event: 'You write a diversity report nobody will read.', happiness: -2 },
+      { event: 'You organize mandatory unconscious bias training for a high-risk employee.', pvpEffects: [{ stat: 'happiness', amount: -2, target: 'choose_one' }] },
+      { event: 'You post a woke thread on company time and it goes viral.', fame: 3 },
+      { event: 'You cancel a senior executive for a 2012 tweet.', pvpEffects: [{ stat: 'fame', amount: -3, target: 'choose_one' }] },
+      { event: 'You report a colleague for a policy violation.', pvpEffects: [{ stat: 'cash', amount: -10000, target: 'choose_one' }] },
+      { event: 'You host a successful team building event.', pvpEffects: [{ stat: 'happiness', amount: 2, target: 'all' }] },
+      { event: 'You get promoted to Head of People & Culture.', salary: 10000 },
+      { event: 'You mandate a company-wide sensitivity audit and everyone hates it.', pvpEffects: [
+        { stat: 'happiness', amount: -2, target: 'all_others' },
+        { stat: 'fame', amount: -2, target: 'all_others' },
+        { stat: 'cash', amount: -5000, target: 'all_others' },
+      ] },
+    ],
+    entry: { degree: 'genderStudies', altCashCost: 15000, altStatCost: { stat: 'fame', amount: -5 }, nepotism: true },
+    completion: { experienceCard: true },
+  },
+  TECH_BRO: {
+    key: 'TECH_BRO', displayName: 'Tech Bro', boardTile: 28, exitTile: 29,
+    tiles: [
+      { event: 'You join a startup with a ping pong table and no benefits.', happiness: 2 },
+      { event: 'You pivot the entire product roadmap over a weekend.', happiness: -2 },
+      { event: 'Your first PR gets merged after 3 weeks of review.', cash: 5000 },
+      { event: 'VC calls your idea disruptive, you don\'t know what it does either.', cash: 10000 },
+      { event: 'You get paged at 4am for a prod outage on your day off.', happiness: -2, hp: -1 },
+      { event: 'You spent the whole day watching Netflix and now you\'re pulling an all-nighter.', hp: -2 },
+      { event: 'You get named on Forbes 30 Under 30.', fame: 7 },
+      { event: 'Your MacBook gets stolen at a WeWork.', cash: -10000 },
+      { event: 'AI replaces your entire team.', special: 'SENT_TO_PAYDAY' },
+      { event: 'Your startup gets acquired by Google.', diceMultiplier: 10000, diceTarget: 'salary' },
+    ],
+    entry: { degree: 'computerScience', altCashCost: 20000, nepotism: true },
+    completion: { experienceCard: true },
+  },
+  RIGHT_WING_GRIFTER: {
+    key: 'RIGHT_WING_GRIFTER', displayName: 'Right-Wing Grifter', boardTile: 31, exitTile: 32,
+    tiles: [
+      { event: 'You launch a podcast nobody asked for.', diceMultiplier: 1, diceTarget: 'fame' },
+      { event: 'Your podcast sponsor is a crypto gambling company.', cash: 15000 },
+      { event: 'You went viral after owning college students in the marketplace of ideas.', fame: 3 },
+      { event: 'You accidentally say something true on Fox News.', fame: -2 },
+      { event: 'You sell signed Bibles at $60 each.', cash: 10000 },
+      { event: 'You get ratio\'d by a 19 year old on Twitter and it ruins your whole week.', happiness: -2 },
+      { event: 'You get invited to be interviewed by Tucker Carlson at CPAC.', fame: 4 },
+      { event: 'Behind the scenes footage leaks of you criticizing Trump.', fame: -5 },
+      { event: 'You run for Senate and win on vibes alone.', fame: 7, salary: 20000 },
+    ],
+    entry: { degree: 'politicalScience', altCashCost: 25000, altStatCost: { stat: 'happiness', amount: -5 }, nepotism: true },
+    completion: { experienceCard: true },
+  },
+  STARVING_ARTIST: {
+    key: 'STARVING_ARTIST', displayName: 'Starving Artist', boardTile: 34, exitTile: 36,
+    tiles: [
+      { event: 'You rent a studio apartment and call it your atelier.', happiness: 2 },
+      { event: 'Your first gallery showing gets 12 attendees including your mom.', cash: -10000 },
+      { event: 'A critic calls your work "derivative but promising."', fame: 1, happiness: 1 },
+      { event: 'You pay $10,000 for a masterclass from an artist nobody has heard of.', cash: -10000 },
+      { event: 'You sell a piece to a stranger at a farmers market.', happiness: 3, cash: 5000 },
+      { event: 'A tech startup commissions you to paint a mural for their office.', cash: 10000 },
+      { event: 'A celebrity likes your work on Instagram and reposts it.', fame: 3 },
+      { event: 'You put your best piece up for auction and the bidding gets out of hand.', salaryMultiplierCash: 2 },
+      { event: 'Your work gets featured in a major museum exhibition.', fame: 5, happiness: 5 },
+    ],
+    entry: { degree: 'art', altCashCost: 25000, nepotism: true },
+    completion: { roleUnlock: 'isArtist', experienceCard: true },
+  },
+  STREAMER: {
+    key: 'STREAMER', displayName: 'Streamer', boardTile: 38, exitTile: 39,
+    tiles: [
+      { event: 'You buy a $5,000 streaming setup and go live to 3 viewers.', cash: -10000 },
+      { event: 'A clip of you losing your mind over a bad play gets half a million views overnight.', fame: 3 },
+      { event: 'Your IP gets exposed on stream and you get DDoS\'d.', happiness: -2, cash: -10000 },
+      { event: 'A parasocial fan sends a $50,000 superchat.', cash: 50000 },
+      { event: 'You haven\'t showered in 4 days.', hp: -2 },
+      { event: 'A viewer calls in a bomb threat and the SWAT team raids you on stream.', happiness: -3 },
+      { event: 'You get banned for 3 days for a TOS violation.', fame: -2 },
+      { event: 'You hit 1 million subscribers.', fame: 5, happiness: 5 },
+      { event: 'Subathon goes 72 hours, chat donates insane amounts.', hp: -3, cash: 20000 },
+      { event: 'You sign an exclusive deal with a major platform.', fame: 7, salary: 30000 },
+    ],
+    entry: { rollToEnter: { target: 1, dieCost: 15000, maxAttempts: 2 }, nepotism: true },
+    completion: { experienceCard: true },
+  },
+};
 
 // ── Player factory ─────────────────────────────────────────────────────────
 
@@ -264,6 +477,12 @@ function createPlayer(socketId: string, name: string, isHost = false): Player {
     isDoctor: false,
     isCop: false,
     skipNextPayday: false,
+    inPath: false,
+    currentPath: null,
+    pathTile: 0,
+    isArtist: false,
+    copWaitTurns: 0,
+    streamerAttemptsUsed: 0,
     lastPong: Date.now()
   };
 }
@@ -416,7 +635,14 @@ function getFullState(room: GameRoom, requestingSocketId: string | null = null):
       inHospital: player.inHospital,
       inJapan: player.inJapan,
       isDoctor: player.isDoctor,
-      isCop: player.isCop
+      isCop: player.isCop,
+      // Phase 8: Career path state
+      inPath: player.inPath,
+      currentPath: player.currentPath,
+      pathTile: player.pathTile,
+      isArtist: player.isArtist,
+      copWaitTurns: player.copWaitTurns,
+      streamerAttemptsUsed: player.streamerAttemptsUsed
     };
   }
 
@@ -951,6 +1177,30 @@ function handlePropertyPass(
   advanceTurn(room, roomCode, playerId, player.name, 0, player.position, player.position, 'PROPERTY_PASSED');
 }
 
+// ── Phase 8: Path helpers ──────────────────────────────────────────────────
+
+function enterPath(player: Player, pathKey: string): void {
+  const pathConfig = CAREER_PATHS[pathKey];
+  if (!pathConfig) return;
+  player.inPath = true;
+  player.currentPath = pathKey;
+  player.pathTile = 0;
+  player.career = pathConfig.displayName;
+  player.careerBadge = pathKey;
+  player.unemployed = false;
+}
+
+function exitPath(player: Player, reason: 'completed' | 'hospital' | 'prison' | 'special'): void {
+  player.inPath = false;
+  player.currentPath = null;
+  player.pathTile = 0;
+  if (reason !== 'completed') {
+    player.unemployed = true;
+    player.career = null;
+    player.careerBadge = null;
+  }
+}
+
 function dispatchTile(
   room: GameRoom,
   roomCode: string,
@@ -1076,7 +1326,7 @@ function dispatchTile(
     case 'GYM_MEMBERSHIP':
     case 'COP':
     case 'LOTTERY':
-    case 'DEI_OFFICER':
+    case 'PEOPLE_AND_CULTURE':
     case 'REVOLUTION':
     case 'TECH_BRO':
     case 'RIGHT_WING_GRIFTER':
@@ -1597,6 +1847,8 @@ export {
   handleJapanTurnStart, checkGoombaStomp, canPlayCard,
   checkHpAndHospitalize, handleHpCheck,
   // Phase 7 exports
-  handlePropertyLanding, handlePropertyBuy, handlePropertyPass
+  handlePropertyLanding, handlePropertyBuy, handlePropertyPass,
+  // Phase 8 exports
+  enterPath, exitPath
 };
 

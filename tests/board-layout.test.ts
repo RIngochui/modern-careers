@@ -56,7 +56,7 @@ describe('BOARD-01 board layout — 40 tiles', () => {
     { index: 19, type: 'LOTTERY',               name: 'Lottery' },
     { index: 20, type: 'JAPAN_TRIP',            name: 'Japan Trip' },
     { index: 21, type: 'OPPORTUNITY_KNOCKS',    name: 'Opportunity Knocks' },
-    { index: 22, type: 'DEI_OFFICER',           name: 'DEI Officer' },
+    { index: 22, type: 'PEOPLE_AND_CULTURE',    name: 'People & Culture' },
     { index: 23, type: 'REVOLUTION',            name: 'Revolution' },
     { index: 24, type: 'OPPORTUNITY_KNOCKS',    name: 'Opportunity Knocks' },
     { index: 25, type: 'HOUSE',                 name: 'House' },

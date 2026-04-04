@@ -245,7 +245,7 @@ Reuses the Phase 7 property buy-prompt pattern (`#property-choice`).
 ```
 Container: display none (toggled visible on career entry event)
   padding: 16px
-  margin-top: 12px
+  margin-top: 8px
   background: #16213e
   border: 2px solid #f0c040
   border-radius: 8px
@@ -348,7 +348,7 @@ Stat change badges (inline spans after event text):
 ```
 Each badge:
   display: inline-block
-  padding: 2px 6px
+  padding: 4px 8px
   margin: 2px
   border-radius: 4px
   font-size: 12px

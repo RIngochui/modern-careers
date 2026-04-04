@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: Ready to plan
-stopped_at: Phase 8 context gathered
-last_updated: "2026-04-04T21:23:07.382Z"
+current_plan: 1
+status: Executing Phase 08
+stopped_at: Completed 08-university-career-paths 08-01-PLAN.md (TDD Wave 0 stubs + build corruption fix)
+last_updated: "2026-04-04T23:43:00Z"
 progress:
-  total_phases: 12
+  total_phases: 13
   completed_phases: 7
-  total_plans: 25
+  total_plans: 29
   completed_plans: 25
   percent: 100
 ---
@@ -25,13 +25,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Fun, chaotic, real-time multiplayer party experience playable in a browser — host on big screen, players on phones, no install required.
-**Current focus:** Phase 06 — hospital-prison-japan-trip (In Progress — Plans 01-02 complete)
+**Current focus:** Phase 08 — university-career-paths
 
 ## Current Status
 
 **Phase:** 8
-**Current Plan:** Not started
-**Stopped at:** Phase 8 context gathered
+**Current Plan:** 1
+**Stopped at:** Phase 8 UI-SPEC approved
 **Next action:** Execute Plan 03 — add client-side event handlers for Phase 6 events in game.ts, recompile game.js
 
 ## Phase Progress
@@ -88,6 +88,8 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 | 2026-04-03 | 2d6 >= 9 threshold for Japan Trip forced-leave (per RESEARCH.md recommendation) | Plan 06-01 |
 | 2026-04-03 | Prison bail = $5,000 flat (per RESEARCH.md recommendation) | Plan 06-01 |
 | 2026-04-03 | PRISON-01 tile sanity check stays GREEN in Wave 0 (existing board already has PRISON at tile 10) | Plan 06-01 |
+| 2026-04-04 | Synced server.ts from main branch before fixing </invoke> corruption — worktree had stale pre-Phase-7 version | Plan 08-01 |
+| 2026-04-04 | tile-22 stub uses real BOARD_TILES[22].type assertion (PEOPLE_AND_CULTURE) — RED because DEI_OFFICER rename scheduled for Plan 03 | Plan 08-01 |
 
 ## Performance Metrics
 

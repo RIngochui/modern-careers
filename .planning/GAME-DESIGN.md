@@ -36,10 +36,11 @@ Examples:
 
 ## Goomba Stomp
 
-If you end movement on a tile already occupied by another player:
-- You may Goomba stomp them → sends target to **Japan Trip (Tile 20)**
-- **Cops** (completed Cop path) may instead send target to **Prison (Tile 10)**
-- Does not inherently change stats
+If you end movement on a tile already occupied by another player, you **may choose** to stomp them (optional):
+- **Standard stomp** → sends target to **Payday (Tile 0)**: –1 HP, cannot collect Payday salary that turn
+- **Cop stomp** (completed Cop path) → sends target to **Prison (Tile 10)**: –2 HP
+- Stomper stays on their tile; if you decline to stomp, nothing happens
+- HP loss can trigger hospitalization (HP ≤ 0 → Hospital)
 
 ---
 
@@ -132,7 +133,7 @@ If you end movement on a tile already occupied by another player:
 ### 4 — McDonald's Employee (Career Path Entry)
 - Entry: no degree, no fee; anyone can enter
 - Path: low Money, flavor tiles, Manager promotion (+10,000 Salary), 1 big tile
-- Completion: exit to Opportunity Knocks (Tile 6), +1 Experience card
+- Completion: exit to Opportunity Knocks (Tile 5), +1 Experience card
 
 ### 5 — Opportunity Knocks
 
@@ -202,7 +203,7 @@ If you end movement on a tile already occupied by another player:
 
 ### 21 — Opportunity Knocks
 
-### 22 — DEI Officer (Career Path Entry)
+### 22 — People & Culture Specialist (Career Path Entry)
 - Entry: Gender Studies degree OR lose 20 Fame OR Nepotism
 - Path: negative Money, PvP tiles (reduce other players' Happiness/Fame/Money, "cancel" people)
 - Completion: exit to Opportunity Knocks (Tile 24), +1 Experience card
@@ -285,7 +286,7 @@ If you end movement on a tile already occupied by another player:
 | Finance Bro | 12 | Economics or Business | 10,000 | — | Yes |
 | Supply Teacher | 15 | Teaching | 10,000 | — | Yes |
 | Cop | 18 | None | 15,000 + wait 1 turn | — | Yes |
-| DEI Officer | 22 | Gender Studies | — | –20 Fame | Yes |
+| People & Culture Specialist | 22 | Gender Studies | — | –20 Fame | Yes |
 | Tech Bro | 28 | Computer Science | 20,000 | — | Yes |
 | Right-Wing Grifter | 31 | Political Science | — | –25 Happiness | Yes |
 | Starving Artist | 34 | Art | 25,000 | — | Yes |

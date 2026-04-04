@@ -109,7 +109,7 @@ Pay $10,000 to enter. Choose a degree:
 |--------|------------------|
 | Economics | Finance Bro |
 | Computer Science | Tech Bro |
-| Gender Studies | DEI Officer |
+| Gender Studies | People & Culture Specialist |
 | Political Science | Right-Wing Grifter |
 | Art | Starving Artist |
 | Teaching Degree | Supply Teacher |
@@ -145,7 +145,7 @@ A shared global pool starts at $50,000.
 ### Japan Trip (Tile 20)
 See [Japan Trip](#japan-trip) section below.
 
-### DEI Officer Path (Tile 22)
+### People & Culture Specialist Path (Tile 22)
 Entry: Gender Studies degree OR lose 20 Fame OR Nepotism.
 
 ### Revolution (Tile 23)
@@ -248,12 +248,13 @@ Land on Tile 20: gain +1 Happiness. You're now on vacation.
 
 ## Goomba Stomp
 
-Land on a tile already occupied by another player? You may **stomp** them.
+Land on a tile already occupied by another player? You **choose** whether to stomp — it's optional.
 
-- **Standard stomp** → target sent to Japan Trip (Tile 20)
-- **Cop stomp** → target sent to Prison (Tile 10)
+- **Standard stomp** → target sent to Payday (Tile 0): –1 HP, cannot collect Payday salary that turn
+- **Cop stomp** → target sent to Prison (Tile 10): –2 HP
+- If you decline to stomp, nothing happens
 
-The stomper stays. The stomped player resumes play from their new location.
+The stomper stays. The stomped player resumes play from their new location. HP loss can trigger hospitalization.
 
 ---
 
@@ -269,7 +270,7 @@ Career paths branch off the main board. Inside a career path, you roll **1 die**
 | Finance Bro | 12 | Economics/Business degree or $10k or Nepotism | High money, one Prison tile (tax evasion), no Fame |
 | Supply Teacher | 15 | Teaching degree or $10k or Nepotism | Big Happiness, low money |
 | Cop | 18 | Wait 1 turn + $15k or Nepotism | +HP, –Fame, –Happiness; special powers on completion |
-| DEI Officer | 22 | Gender Studies or –20 Fame or Nepotism | PvP: reduce other players' stats |
+| People & Culture Specialist | 22 | Gender Studies or –20 Fame or Nepotism | PvP: reduce other players' stats |
 | Tech Bro | 28 | Computer Science or $20k or Nepotism | High money, Salary boosts, Fame, HP drain, potential layoff |
 | Right-Wing Grifter | 31 | Political Science or –25 Happiness or Nepotism | Max Fame |
 | Starving Artist | 34 | Art degree or $25k or Nepotism | Happiness, Fame, painful money drain, one big auction tile |
@@ -287,7 +288,7 @@ Career paths branch off the main board. Inside a career path, you roll **1 die**
 ### Cop
 **How to become one:** Complete the Cop career path.
 - **Prison immunity:** If you'd go to Prison, you take a fine or HP/Happiness penalty instead.
-- **Enhanced Goomba Stomp:** Your stomps send targets to Prison instead of Japan Trip.
+- **Enhanced Goomba Stomp:** Your stomps send targets to Prison (–2 HP) instead of Payday (–1 HP).
 
 ### Artist (Starving Artist)
 **How to become one:** Complete the Starving Artist path.

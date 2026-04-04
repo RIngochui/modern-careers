@@ -182,7 +182,7 @@ Plans:
 
 **Design reference:** `.planning/GAME-DESIGN.md` — Degrees & Careers section
 
-**Career paths:** McDonald's, Finance Bro, Supply Teacher, Cop, DEI Officer, Tech Bro, Right-Wing Grifter, Starving Artist, Streamer
+**Career paths:** McDonald's, Finance Bro, Supply Teacher, Cop, People & Culture Specialist, Tech Bro, Right-Wing Grifter, Starving Artist, Streamer
 
 **Requirements:** COLL-01..06, CAREER-01..10
 
@@ -194,7 +194,7 @@ Plans:
 - [ ] Each career path enforces entry requirements (degree / cash / Nepotism)
 - [ ] Cop path: 2 tiles that send to Hospital and cancel Cop completion
 - [ ] Streamer: must roll a 1 (10,000/attempt, max 3) or use Nepotism
-- [ ] DEI Officer entry: Gender Studies OR lose 20 Fame
+- [ ] People & Culture Specialist entry: Gender Studies OR lose 20 Fame
 - [ ] Right-Wing Grifter entry: Political Science OR lose 25 Happiness
 - [ ] Each path completion: +1 Experience card
 - [ ] Cop completion: gains Prison immunity + enhanced Goomba Stomp

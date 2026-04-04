@@ -79,7 +79,7 @@
 
 ### Goomba Stomp
 
-- [x] **STOMP-01**: If a player ends their move on an occupied tile (Goomba Stomp): non-Cop stomper sends all occupants to Japan Trip (Tile 20); Cop stomper sends all occupants to Prison (Tile 10)
+- [x] **STOMP-01**: If a player ends their move on an occupied tile, they may optionally Goomba Stomp: non-Cop sends target to Payday (Tile 0) –1 HP, skipNextPayday=true; Cop sends target to Prison (Tile 10) –2 HP. Stomping is a player choice — declining has no effect.
 - [x] **STOMP-02**: Stomping player stays on the tile; applies on main loop and inside all career/college paths
 
 ### College Path

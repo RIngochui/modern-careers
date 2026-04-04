@@ -215,7 +215,7 @@ for i in 1..maxRolls (player may stop early):
 ### Tile 20 — Japan Trip
 See [Japan Trip Mechanics](#japan-trip-mechanics) section.
 
-### Tile 22 — DEI Officer (Career Path Entry)
+### Tile 22 — People & Culture Specialist (Career Path Entry)
 Entry: `degree === 'Gender Studies' || player.fame -= 20 || Nepotism`
 Exits to Tile 24 + `experienceCards += 1`
 
@@ -464,29 +464,31 @@ function handleJapanTurnStart(player, room) {
 
 ## Goomba Stomp Mechanics
 
-Called after every position update, before dispatchTile.
+**Optional** — stomper chooses whether to stomp. Called after position update when occupants detected; server emits a prompt to the stomper who accepts or declines.
 
 ```typescript
 function checkGoombaStomp(stomper, room) {
   const targets = [...room.players.values()].filter(p =>
     p.id !== stomper.id &&
-    p.position === stomper.position &&
-    !p.inPrison && !p.inHospital && !p.inJapan
+    p.position === stomper.position
   )
   if (targets.length === 0) return
 
+  // stomper receives 'stomp-available' prompt; must accept to proceed
   for (const target of targets) {
     if (stomper.isCop) {
-      target.position = 10
+      target.position = 10   // Prison
       target.inPrison = true
       target.prisonTurns = 0
+      target.hp -= 2
     } else {
-      target.position = 20
-      target.inJapan = true
-      target.happiness += 1
+      target.position = 0    // Payday
+      target.skipNextPayday = true
+      target.hp -= 1
     }
+    // checkHpAndHospitalize(target) — may redirect to Hospital
   }
-  // emit: 'goomba-stomped' { stomper, targets, destination }
+  // emit: 'goomba-stomped' { stomper, targets, destination: isCop ? 10 : 0 }
 }
 ```
 
@@ -527,7 +529,7 @@ if (player.isCop) {
 ```
 
 ### Enhanced Stomp
-In `checkGoombaStomp()`: `if (stomper.isCop) → target to Prison` (see above).
+In `checkGoombaStomp()`: `if (stomper.isCop) → target to Prison (–2 HP)` instead of Payday (–1 HP).
 
 ---
 
@@ -594,7 +596,7 @@ function canPlayCard(player): boolean {
 | 19 | LOTTERY | Lottery |
 | 20 | JAPAN_TRIP | Japan Trip |
 | 21 | OPPORTUNITY_KNOCKS | Opportunity Knocks |
-| 22 | DEI_OFFICER | DEI Officer (Career) |
+| 22 | DEI_OFFICER | People & Culture Specialist (Career) |
 | 23 | REVOLUTION | Revolution |
 | 24 | OPPORTUNITY_KNOCKS | Opportunity Knocks |
 | 25 | HOUSE | House |
@@ -623,7 +625,7 @@ function canPlayCard(player): boolean {
 | Finance Bro | 12 | Economics or Business | $10,000 | — | Yes |
 | Supply Teacher | 15 | Teaching Degree | $10,000 | — | Yes |
 | Cop | 18 | None | $15,000 + wait 1 turn | — | Yes |
-| DEI Officer | 22 | Gender Studies | — | –20 Fame | Yes |
+| People & Culture Specialist | 22 | Gender Studies | — | –20 Fame | Yes |
 | Tech Bro | 28 | Computer Science | $20,000 | — | Yes |
 | Right-Wing Grifter | 31 | Political Science | — | –25 Happiness | Yes |
 | Starving Artist | 34 | Art | $25,000 | — | Yes |

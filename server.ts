@@ -56,6 +56,7 @@ export interface Player {
   inJapan: boolean;
   isDoctor: boolean;
   isCop: boolean;
+  skipNextPayday: boolean;
   // Heartbeat
   lastPong: number;
 }
@@ -79,6 +80,7 @@ export interface GameRoom {
   createdAt: number;
   startedAt: number | null;
   propertyOwners: Map<number, string>;
+  pendingStompDispatch: { roll: number; fromPosition: number; tileIndex: number } | null;
 }
 
 export interface RateLimit {
@@ -171,7 +173,8 @@ const TURN_PHASES = {
   LANDED: 'LANDED',
   TILE_RESOLVING: 'TILE_RESOLVING',
   WAITING_FOR_NEXT_TURN: 'WAITING_FOR_NEXT_TURN',
-  WAITING_FOR_PROPERTY_DECISION: 'WAITING_FOR_PROPERTY_DECISION'
+  WAITING_FOR_PROPERTY_DECISION: 'WAITING_FOR_PROPERTY_DECISION',
+  WAITING_FOR_STOMP_DECISION: 'WAITING_FOR_STOMP_DECISION'
 } as const;
 
 const STARTING_MONEY = 10000;
@@ -260,6 +263,7 @@ function createPlayer(socketId: string, name: string, isHost = false): Player {
     inJapan: false,
     isDoctor: false,
     isCop: false,
+    skipNextPayday: false,
     lastPong: Date.now()
   };
 }
@@ -283,7 +287,8 @@ function createGameRoom(roomCode: string, hostSocketId: string): GameRoom {
     turnHistory: [],
     createdAt: Date.now(),
     startedAt: null,
-    propertyOwners: new Map<number, string>()
+    propertyOwners: new Map<number, string>(),
+    pendingStompDispatch: null
   };
 }
 
@@ -676,8 +681,9 @@ function handleJapanTurnStart(room: GameRoom, roomCode: string, playerId: string
 /**
  * Check for Goomba Stomp after a player moves to newPos.
  * Finds all other players on the same tile and sends them to:
- *   - Japan Trip (Tile 20) if stomper is NOT a Cop.
- *   - Prison (Tile 10) if stomper IS a Cop.
+ *   - Payday (Tile 0) if stomper is NOT a Cop: –1 HP, skipNextPayday = true.
+ *   - Prison (Tile 10) if stomper IS a Cop: –2 HP.
+ * HP is checked after each target update — if HP ≤ 0, target is sent to Hospital.
  * Returns the array of stomped players (for testability).
  */
 function checkGoombaStomp(room: GameRoom, roomCode: string, stomperId: string): Player[] {
@@ -697,17 +703,21 @@ function checkGoombaStomp(room: GameRoom, roomCode: string, stomperId: string): 
         target.position = 10; // PRISON_TILE
         target.inPrison = true;
         target.prisonTurns = 0;
+        target.hp -= 2;
       } else {
-        target.position = 20; // JAPAN_TRIP_TILE
-        target.inJapan = true;
+        target.position = 0; // PAYDAY_TILE
+        target.skipNextPayday = true;
+        target.hp -= 1;
       }
+
+      checkHpAndHospitalize(target, room, roomCode);
     }
 
     io.to(roomCode).emit('goomba-stomped', {
       stomperName: stomper.name,
       stompedNames: stompTargets.map(t => t.name),
       isCopStomp: stomper.isCop ?? false,
-      destination: stomper.isCop ? 10 : 20
+      destination: stomper.isCop ? 10 : 0
     });
   }
 
@@ -1345,9 +1355,6 @@ io.on('connection', (socket) => {
     const newPos = (fromPosition + roll) % BOARD_SIZE;
     player.position = newPos;
 
-    // Phase 6: Goomba Stomp check — after position update, before dispatchTile
-    checkGoombaStomp(room, roomCode, socket.id);
-
     room.turnPhase = TURN_PHASES.MID_ROLL;
 
     io.to(roomCode).emit('move-token', {
@@ -1370,6 +1377,20 @@ io.on('connection', (socket) => {
     });
 
     console.log(`[roll-dice] ${player.name} rolled ${roll} (${d1}+${d2}): pos ${fromPosition} → ${newPos} (${BOARD_TILES[newPos].name})`);
+
+    // Phase 6: Goomba Stomp — optional. Check for occupants; if present, prompt stomper.
+    const stompTargets = Array.from(room.players.values())
+      .filter(p => p.socketId !== socket.id && p.position === newPos);
+
+    if (stompTargets.length > 0) {
+      room.pendingStompDispatch = { roll, fromPosition, tileIndex: newPos };
+      room.turnPhase = TURN_PHASES.WAITING_FOR_STOMP_DECISION;
+      socket.emit('stomp-available', {
+        targetNames: stompTargets.map(t => t.name),
+        isCop: player.isCop ?? false
+      });
+      return; // Paused — awaiting stomp-decision event
+    }
 
     dispatchTile(room, roomCode, socket.id, newPos, roll, fromPosition);
   });
@@ -1460,6 +1481,30 @@ io.on('connection', (socket) => {
     const player = room.players.get(socket.id)!;
     advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position,
       accept ? 'PROPERTY_BOUGHT' : 'PROPERTY_PASSED');
+  });
+
+  // ── Phase 6: Goomba Stomp decision ──────────────────────────────────────
+  socket.on('stomp-decision', ({ accept }: { accept: boolean }) => {
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) { socket.emit('error', { message: 'No room found' }); return; }
+    const room = getRoom(roomCode);
+    if (!room) { socket.emit('error', { message: 'Room not found' }); return; }
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_STOMP_DECISION) {
+      socket.emit('error', { message: 'No stomp decision pending' }); return;
+    }
+    const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+    if (socket.id !== currentPlayerId) {
+      socket.emit('error', { message: 'Not your turn' }); return;
+    }
+
+    const pending = room.pendingStompDispatch!;
+    room.pendingStompDispatch = null;
+
+    if (accept) {
+      checkGoombaStomp(room, roomCode, socket.id);
+    }
+
+    dispatchTile(room, roomCode, socket.id, pending.tileIndex, pending.roll, pending.fromPosition);
   });
 
   socket.on('disconnect', (reason: string) => {

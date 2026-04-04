@@ -42,7 +42,7 @@ Implement University path (7 degrees) and all 9 career paths: entry requirement 
 
 ### Path Tile Content
 - **D-14:** CAREERS.md (`.planning/CAREERS.md`) is the **canonical source of truth** for all path tile events, stat changes, tile counts, and special effects. Tile counts are locked to the number of events specified per career. Do not invent or modify tile content during implementation.
-- **D-15:** CAREERS.md Cop "Unlocks" note says "Enhanced Goomba Stomp: sends target to Prison instead of Payday" — this is a **typo**. Per GAME-DESIGN.md and Phase 6 implementation, normal Goomba Stomp → Japan Trip (Tile 20); Cop Goomba Stomp → Prison (Tile 10).
+- **D-15:** Normal Goomba Stomp → Payday (Tile 0), –1 HP, skip Payday salary. Cop Goomba Stomp → Prison (Tile 10), –2 HP. Both already implemented in Phase 6 (`checkGoombaStomp`). CAREERS.md Cop "Unlocks" note is correct.
 
 ### Naming Alignment
 - **D-16:** Tile 22 tile type is renamed from `DEI_OFFICER` to `PEOPLE_AND_CULTURE` (or similar) everywhere: `BOARD_TILES`, server handlers, client display names. The career is "People & Culture Specialist."

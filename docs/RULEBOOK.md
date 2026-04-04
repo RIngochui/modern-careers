@@ -103,19 +103,19 @@ Pay $10,000 to place a parlay. Roll 1 die:
 Roll 1 die = X. Gain X Happiness, lose X HP. Fun until it isn't.
 
 ### University (Tile 9)
-Pay $10,000 to enter. Choose a degree:
+Pay $10,000 to enter (free if redirected from Tile 3). Traverse 8 path tiles, then choose a degree on completion:
 
-| Degree | Opens Career Path |
-|--------|------------------|
-| Economics | Finance Bro |
-| Computer Science | Tech Bro |
-| Gender Studies | People & Culture Specialist |
-| Political Science | Right-Wing Grifter |
-| Art | Starving Artist |
-| Teaching Degree | Supply Teacher |
-| Nursing Degree | Doctor (career path) |
+| Degree | Unlocks |
+|--------|---------|
+| Economics | Finance Bro path |
+| Computer Science | Tech Bro path |
+| Gender Studies | People & Culture Specialist path |
+| Political Science | Right-Wing Grifter path |
+| Art | Starving Artist path |
+| Teaching Degree | Supply Teacher path |
+| Medical Degree | Doctor passive (sent to Hospital immediately — residency) |
 
-**Rules:** Maximum 1 degree per player, ever. Completing University exits you to Tile 11.
+**Rules:** Maximum 1 degree per player, ever. All 7 degrees are available on your first University run. Completing University exits you to Tile 11. If you leave mid-path (e.g., hospitalized), no degree is awarded.
 
 ### Prison (Tile 10)
 See [Prison](#prison) section below.
@@ -146,7 +146,7 @@ A shared global pool starts at $50,000.
 See [Japan Trip](#japan-trip) section below.
 
 ### People & Culture Specialist Path (Tile 22)
-Entry: Gender Studies degree OR lose 20 Fame OR Nepotism.
+Entry: Gender Studies degree OR pay $15,000 + lose 5 Fame OR Nepotism.
 
 ### Revolution (Tile 23)
 Everyone's cash on hand is totalled and split equally among all players. Leftover cents go to the Banker.
@@ -191,7 +191,7 @@ Tiered Fame purchases:
 - $160,000 → +16 Fame
 
 ### Streamer Path (Tile 38)
-Entry: Roll a 1 (each attempt costs $10,000, max 3 tries per visit) OR Nepotism. Hardest entry in the game — but worth it.
+Entry: Roll a 1 (each attempt costs $15,000, max 2 tries per visit) OR Nepotism. Hardest entry in the game — but worth it.
 
 ---
 
@@ -209,7 +209,7 @@ HP ≤ 0? You're hospitalized immediately. Turn pauses.
 - Roll 1 die on your turn. Roll ≤ 5 → you're out. Roll 6 → stuck another turn.
 - Pay ½ Salary → immediately released.
 
-**On release:** Gain +5 HP. Payment goes to the Doctor (if one exists) or the Banker.
+**On release:** Gain +2 HP. Payment (½ Salary) goes to the Doctor (if one exists) or the Banker.
 
 ---
 
@@ -281,9 +281,9 @@ Career paths branch off the main board. Inside a career path, you roll **1 die**
 ## Special Roles
 
 ### Doctor
-**How to become one:** Complete the Nursing Degree path.
-- On graduation: immediately sent to Hospital.
-- **Passive income:** Whenever any player pays to leave Hospital, you receive ½ of their Salary.
+**How to become one:** Earn a Medical Degree (complete University path, choose Medical Degree).
+- On degree selection: immediately sent to Hospital (residency placement). Normal Hospital rules apply — roll ≤ 5 to leave, gain +2 HP on exit.
+- **Passive income (permanent):** Whenever any player pays to leave Hospital, you receive ½ of their Salary. If you're the patient, payment goes to the Banker instead.
 
 ### Cop
 **How to become one:** Complete the Cop career path.

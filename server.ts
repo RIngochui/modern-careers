@@ -215,7 +215,7 @@ export const BOARD_TILES: Array<{ type: string; name: string; description: strin
   { type: 'COVID_STIMULUS',        name: 'COVID Stimulus',      description: 'Trade HP for cash: 10,000 per HP.' },
   { type: 'TECH_BRO',              name: 'Tech Bro',            description: 'Career path entry. Requires Computer Science, OR pay 20,000, OR Nepotism.' },
   { type: 'OPPORTUNITY_KNOCKS',    name: 'Opportunity Knocks',  description: 'Draw an Opportunity card.' },
-  { type: 'HOSPITAL',              name: 'Hospital',            description: 'Stuck until roll ≤5 OR pay ½ Salary. On leaving: +5 HP.' },
+  { type: 'HOSPITAL',              name: 'Hospital',            description: 'Stuck until roll ≤5 OR pay ½ Salary. On leaving: +2 HP.' },
   { type: 'RIGHT_WING_GRIFTER',    name: 'Right-Wing Grifter',  description: 'Career path entry. Requires Political Science, OR lose 25 Happiness, OR Nepotism.' },
   { type: 'OPPORTUNITY_KNOCKS',    name: 'Opportunity Knocks',  description: 'Draw an Opportunity card.' },
   { type: 'OZEMPIC',               name: 'Ozempic',             description: 'Buy up to 3 treatments. Each: pay 10,000, gain +2 HP.' },
@@ -491,7 +491,7 @@ function handleHpCheck(room: GameRoom, roomCode: string, playerId: string): void
 
 /**
  * Hospital turn handler: roll 1d6.
- * - Roll 1–5 (≤ 5): escape — inHospital=false, +5 HP, pay Math.floor(salary/2) to Doctor or Banker.
+ * - Roll 1–5 (≤ 5): escape — inHospital=false, +2 HP, pay Math.floor(salary/2) to Doctor or Banker.
  * - Roll 6: stay — emit 'hospital-stayed', call advanceTurn.
  * Call this inside roll-dice when player.inHospital is true.
  */
@@ -504,8 +504,8 @@ function handleHospitalEscape(room: GameRoom, roomCode: string, playerId: string
   if (escapeRoll <= 5) {
     // ESCAPE
     player.inHospital = false;
-    player.hp += 5;
-    const payment = Math.floor(player.salary / 2);
+    player.hp += 2;
+</invoke>    const payment = Math.floor(player.salary / 2);
     player.money -= payment;
 
     // Route payment to Doctor if one exists, else Banker
@@ -521,7 +521,7 @@ function handleHospitalEscape(room: GameRoom, roomCode: string, playerId: string
     io.to(roomCode).emit('hospital-escaped', {
       playerName: player.name,
       escapeRoll,
-      hpGained: 5,
+      hpGained: 2,
       payment,
       recipientRole,
       newHp: player.hp,

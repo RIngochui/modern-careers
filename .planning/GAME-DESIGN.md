@@ -77,9 +77,9 @@ If you end movement on a tile already occupied by another player, you **may choo
 
 - HP ≤ 0 at any time → immediately sent to Hospital (Tile 30)
 - Cannot use Experience/Opportunity cards while in Hospital
-- To leave Hospital: roll ≤ 5 on 2d6 on your turn, OR pay full Salary
+- To leave Hospital: roll ≤ 5 on 1d6 on your turn, OR pay ½ Salary
 - On leaving: +2 HP
-- Payment → Doctor (if present); if Doctor is the patient, payment goes to Banker instead
+- Payment (½ Salary) → Doctor (if present); if Doctor is the patient, payment goes to Banker instead
 
 ---
 
@@ -98,7 +98,7 @@ If you end movement on a tile already occupied by another player, you **may choo
 - Granted by: Medical Degree (on University path completion) — no career path required
 - On degree selection: immediately sent to Hospital (residency placement); +2 HP on exit applies
 - Only one Doctor per game (max 1 degree per player; Medical Degree is permanent and cannot be cleared)
-- Passive (active for the whole game): whenever any player pays to leave Hospital, that player's full Salary goes to Doctor; if Doctor is the patient, payment goes to Banker instead
+- Passive (active for the whole game): whenever any player pays to leave Hospital, that player's ½ Salary goes to Doctor; if Doctor is the patient, payment goes to Banker instead
 
 ### Cop (Tile 18 path)
 - Entry: wait 1 extra turn + pay 15,000, OR Nepotism referral
@@ -106,7 +106,7 @@ If you end movement on a tile already occupied by another player, you **may choo
 - Contains 2 tiles that send you to Hospital AND cancel Cop completion (must restart)
 - Completion powers:
   - Immune to Prison (fine or HP/Happiness loss instead)
-  - Enhanced Goomba stomp: send target to Prison instead of Japan Trip
+  - Enhanced Goomba stomp: send target to Prison instead of Payday
 
 ### Artist (Starving Artist Tile 34 path completion)
 - Art Gallery/NFT tile (Tile 14): buyer pays Artist instead of Banker
@@ -237,9 +237,9 @@ If you end movement on a tile already occupied by another player, you **may choo
 ### 29 — Opportunity Knocks
 
 ### 30 — Hospital
-- Stuck until roll ≤ 5 on 2d6 OR pay full Salary
+- Stuck until roll ≤ 5 on 1d6 OR pay ½ Salary
 - On leaving: +2 HP
-- Payment → Doctor (if present); if Doctor is the patient, payment goes to Banker instead
+- Payment (½ Salary) → Doctor (if present); if Doctor is the patient, payment goes to Banker instead
 - Cannot use Experience/Opportunity cards here
 
 ### 31 — Right-Wing Grifter (Career Path Entry)

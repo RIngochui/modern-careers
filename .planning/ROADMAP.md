@@ -202,6 +202,14 @@ Plans:
 - [ ] Doctor: Medical Degree (on University completion) → isDoctor = true, immediately sent to Hospital (residency); passive active immediately
 - [ ] Unemployed state if leaving path early
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Fix build corruption + TDD Wave 0 test scaffolds (career-paths.test.ts, university-path.test.ts)
+- [ ] 08-02-PLAN.md — CAREER_PATHS config, Player model extensions, TURN_PHASES, Tile 22 rename, enterPath/exitPath helpers
+- [ ] 08-03-PLAN.md — Server logic: generic career entry/traversal/completion handlers, roll-dice interception, dispatchTile rewire, socket handlers
+- [ ] 08-04-PLAN.md — Client UI: career entry prompt, degree selection, streamer roll, path progress, host turn history
+
 ---
 
 ### Phase 9: Opportunity Knocks

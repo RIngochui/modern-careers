@@ -349,3 +349,17 @@ Plans:
 *Roadmap created: 2026-03-29*
 *Redesigned: 2026-04-02 — full board reset based on finalized game design doc*
 *Phase 6 planned: 2026-04-03 — Hospital, Prison, Japan Trip, Goomba Stomp, Doctor role*
+
+---
+
+## Backlog
+
+### Phase 999.1: Post-MVP Board & UI Visual Revamp (BACKLOG)
+
+**Goal:** Cleaner board layout and improved UI readability — easier to track stats, tiles, and player state at a glance.
+**Ideas:** Redesigned tile visuals, better typography, improved player stat panels, host board overview improvements.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd:review-backlog when ready)

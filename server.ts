@@ -440,6 +440,18 @@ export const CAREER_PATHS: Record<string, CareerPath> = {
   },
 };
 
+const DEGREE_CAP_COLORS: Record<string, string> = {
+  economics: 'green',
+  computerScience: 'blue',
+  genderStudies: 'purple',
+  politicalScience: 'red',
+  art: 'orange',
+  teaching: 'yellow',
+  medical: 'white',
+};
+
+const AVAILABLE_DEGREES = ['economics', 'computerScience', 'genderStudies', 'politicalScience', 'art', 'teaching', 'medical'];
+
 // ── Player factory ─────────────────────────────────────────────────────────
 
 function createPlayer(socketId: string, name: string, isHost = false): Player {
@@ -1177,6 +1189,371 @@ function handlePropertyPass(
   advanceTurn(room, roomCode, playerId, player.name, 0, player.position, player.position, 'PROPERTY_PASSED');
 }
 
+// ── Phase 8: Career/University path mechanics ──────────────────────────────
+
+function checkEntryRequirements(
+  player: Player, pathConfig: CareerPath
+): { meetsRequirements: boolean; reason: string; fee: number } {
+  const entry = pathConfig.entry;
+
+  // Free entry (McDonald's)
+  if (entry.freeEntry) {
+    return { meetsRequirements: true, reason: 'No requirements', fee: 0 };
+  }
+
+  // University: check max 1 degree (can re-enter but won't get another degree)
+  if (pathConfig.key === 'UNIVERSITY') {
+    const fee = entry.cashCost ?? 0;
+    if (player.money < fee) {
+      return { meetsRequirements: false, reason: `Not enough cash. Need $${fee.toLocaleString()}.`, fee };
+    }
+    return { meetsRequirements: true, reason: player.degree ? 'Already hold a degree (no new degree on completion)' : `Entry fee: $${fee.toLocaleString()}`, fee };
+  }
+
+  // Streamer: special roll mechanic — always "meets requirements" if can afford at least 1 attempt
+  if (entry.rollToEnter) {
+    const cost = entry.rollToEnter.dieCost;
+    if (player.money < cost) {
+      return { meetsRequirements: false, reason: `Not enough cash. Need $${cost.toLocaleString()}.`, fee: cost };
+    }
+    return { meetsRequirements: true, reason: `Roll a 1 to enter ($${cost.toLocaleString()}/attempt, max ${entry.rollToEnter.maxAttempts})`, fee: cost };
+  }
+
+  // Degree-based entry (Finance Bro, Supply Teacher, Tech Bro, P&C, RWG, Starving Artist)
+  if (entry.degree) {
+    const requiredDegrees = Array.isArray(entry.degree) ? entry.degree : [entry.degree];
+    const hasDegree = player.degree !== null && requiredDegrees.includes(player.degree);
+
+    if (hasDegree) {
+      const fee = entry.cashCost ?? 0;
+      if (player.money < fee) {
+        return { meetsRequirements: false, reason: `Not enough cash. Need $${fee.toLocaleString()}.`, fee };
+      }
+      return { meetsRequirements: true, reason: `Degree match: ${player.degree}`, fee };
+    }
+
+    // Alt entry: cash + optional stat cost
+    const altFee = entry.altCashCost ?? 0;
+    if (player.money >= altFee) {
+      const statCostDesc = entry.altStatCost ? ` + lose ${Math.abs(entry.altStatCost.amount)} ${entry.altStatCost.stat === 'fame' ? 'Fame' : 'Happiness'}` : '';
+      return { meetsRequirements: true, reason: `Alt entry: pay $${altFee.toLocaleString()}${statCostDesc}`, fee: altFee };
+    }
+
+    return { meetsRequirements: false, reason: `Requires ${requiredDegrees.join(' or ')} degree, or $${altFee.toLocaleString()}.`, fee: altFee };
+  }
+
+  // Cop: cash + wait
+  if (entry.waitTurns) {
+    const fee = entry.cashCost ?? 0;
+    if (player.money < fee) {
+      return { meetsRequirements: false, reason: `Not enough cash. Need $${fee.toLocaleString()}.`, fee };
+    }
+    return { meetsRequirements: true, reason: `Wait ${entry.waitTurns} turn + pay $${fee.toLocaleString()}`, fee };
+  }
+
+  // Fallback: cash cost only
+  const fee = entry.cashCost ?? 0;
+  if (fee > 0 && player.money < fee) {
+    return { meetsRequirements: false, reason: `Not enough cash. Need $${fee.toLocaleString()}.`, fee };
+  }
+  return { meetsRequirements: true, reason: fee > 0 ? `Entry fee: $${fee.toLocaleString()}` : 'No requirements', fee };
+}
+
+function handleCareerEntry(
+  room: GameRoom, roomCode: string, playerId: string, pathKey: string,
+  roll: number, fromPosition: number, tileIndex: number
+): void {
+  const player = room.players.get(playerId);
+  if (!player) return;
+  const pathConfig = CAREER_PATHS[pathKey];
+  if (!pathConfig) {
+    advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, pathKey);
+    return;
+  }
+
+  // Already on a path — just advance turn (shouldn't happen but safety)
+  if (player.inPath) {
+    advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, pathKey);
+    return;
+  }
+
+  const { meetsRequirements, reason, fee } = checkEntryRequirements(player, pathConfig);
+
+  if (!meetsRequirements) {
+    // D-06: show requirements, auto-advance
+    io.to(playerId).emit('careerEntryPrompt', {
+      career: pathKey,
+      displayName: pathConfig.displayName,
+      requirements: reason,
+      meetsRequirements: false,
+      canAfford: false,
+      fee
+    });
+    advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, pathKey);
+    return;
+  }
+
+  // Streamer special: route to streamer roll mechanic
+  if (pathConfig.entry.rollToEnter) {
+    player.streamerAttemptsUsed = 0;
+    room.turnPhase = TURN_PHASES.WAITING_FOR_STREAMER_ROLL;
+    io.to(playerId).emit('streamerEntryPrompt', {
+      attemptsRemaining: pathConfig.entry.rollToEnter.maxAttempts,
+      costPerAttempt: pathConfig.entry.rollToEnter.dieCost
+    });
+    return;
+  }
+
+  // D-04: pause turn for decision
+  room.turnPhase = TURN_PHASES.WAITING_FOR_CAREER_DECISION;
+  io.to(playerId).emit('careerEntryPrompt', {
+    career: pathKey,
+    displayName: pathConfig.displayName,
+    requirements: reason,
+    meetsRequirements: true,
+    canAfford: true,
+    fee
+  });
+  // Turn paused — waiting for career-enter or career-pass socket event
+}
+
+function applyPathTileEffects(player: Player, tile: PathTile, _room: GameRoom, _roomCode: string, _playerId: string): void {
+  if (tile.fame) player.fame += tile.fame;
+  if (tile.happiness) player.happiness += tile.happiness;
+  if (tile.hp) player.hp += tile.hp;
+  if (tile.cash) player.money += tile.cash;
+  if (tile.salary) player.salary += tile.salary;
+}
+
+function handlePathCompletion(
+  room: GameRoom, roomCode: string, playerId: string, roll: number
+): void {
+  const player = room.players.get(playerId)!;
+  const pathKey = player.currentPath!;
+  const pathConfig = CAREER_PATHS[pathKey];
+  if (!pathConfig) return;
+
+  // University path completion: degree selection prompt
+  if (pathKey === 'UNIVERSITY') {
+    if (player.degree === null) {
+      // D-10: prompt degree choice
+      room.turnPhase = TURN_PHASES.WAITING_FOR_DEGREE_CHOICE;
+      io.to(playerId).emit('degreeSelectionPrompt', {
+        availableDegrees: AVAILABLE_DEGREES,
+        hasDegree: false
+      });
+      // Turn paused — waiting for choose-degree socket event
+      return;
+    }
+    // Already has degree — skip selection
+    io.to(playerId).emit('degreeSelectionPrompt', {
+      availableDegrees: [],
+      hasDegree: true
+    });
+  }
+
+  // Role unlocks (per D-18, D-19)
+  if (pathConfig.completion.roleUnlock === 'isCop') {
+    player.isCop = true;
+  }
+  if (pathConfig.completion.roleUnlock === 'isArtist') {
+    player.isArtist = true;
+  }
+
+  // D-21: Experience card stub
+  console.log(`[career] ${player.name} completed ${pathConfig.displayName} — experience card stub (Phase 9)`);
+
+  // Emit completion event
+  io.to(roomCode).emit('pathComplete', {
+    playerId,
+    playerName: player.name,
+    career: pathKey,
+    displayName: pathConfig.displayName,
+    roleUnlock: pathConfig.completion.roleUnlock ?? null,
+    experienceCardStub: true
+  });
+
+  // Exit path and move to exit tile
+  const exitTile = pathConfig.exitTile;
+  exitPath(player, 'completed');
+  player.position = exitTile;
+
+  advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, exitTile, `${pathKey}_COMPLETE`);
+}
+
+function handlePathTurn(
+  room: GameRoom, roomCode: string, playerId: string, roll: number
+): void {
+  const player = room.players.get(playerId)!;
+  const pathConfig = CAREER_PATHS[player.currentPath!];
+  if (!pathConfig) return;
+
+  const newPathTile = player.pathTile + roll;
+
+  // Overshoot = completion (per RESEARCH.md recommendation)
+  if (newPathTile >= pathConfig.tiles.length) {
+    // Apply last tile effects before completing
+    const lastTileIndex = pathConfig.tiles.length - 1;
+    if (player.pathTile <= lastTileIndex) {
+      player.pathTile = lastTileIndex;
+      const lastTile = pathConfig.tiles[lastTileIndex];
+      applyPathTileEffects(player, lastTile, room, roomCode, playerId);
+
+      // Check HP after last tile
+      if (player.hp <= 0) {
+        exitPath(player, 'hospital');
+        checkHpAndHospitalize(player, room, roomCode);
+        return;
+      }
+    }
+    handlePathCompletion(room, roomCode, playerId, roll);
+    return;
+  }
+
+  player.pathTile = newPathTile;
+  const tile = pathConfig.tiles[newPathTile];
+  applyPathTileEffects(player, tile, room, roomCode, playerId);
+
+  // Emit path tile event to all
+  io.to(roomCode).emit('pathTileEvent', {
+    playerId,
+    playerName: player.name,
+    career: player.currentPath,
+    displayName: pathConfig.displayName,
+    tileIndex: newPathTile,
+    totalTiles: pathConfig.tiles.length,
+    eventText: tile.event,
+    statChanges: {
+      fame: tile.fame ?? 0,
+      happiness: tile.happiness ?? 0,
+      hp: tile.hp ?? 0,
+      cash: tile.cash ?? 0,
+      salary: tile.salary ?? 0,
+    },
+    specialEffect: tile.special ?? null,
+    newStats: {
+      money: player.money,
+      fame: player.fame,
+      happiness: player.happiness,
+      hp: player.hp,
+      salary: player.salary,
+    }
+  });
+
+  // Check HP after tile effects
+  if (player.hp <= 0) {
+    exitPath(player, 'hospital');
+    checkHpAndHospitalize(player, room, roomCode);
+    return;
+  }
+
+  // Handle special tile effects
+  if (tile.special === 'HOSPITAL') {
+    exitPath(player, 'hospital');
+    player.inHospital = true;
+    player.position = 30; // Hospital tile
+    io.to(roomCode).emit('movedToHospital', {
+      playerName: player.name,
+      reason: 'path-event',
+      newHp: player.hp
+    });
+    advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, 30, 'PATH_HOSPITAL');
+    return;
+  }
+
+  if (tile.special === 'PRISON') {
+    exitPath(player, 'prison');
+    player.inPrison = true;
+    player.prisonTurns = 0;
+    player.position = 10; // Prison tile
+    io.to(roomCode).emit('prison-entered', {
+      playerName: player.name,
+      position: 10
+    });
+    advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, 10, 'PATH_PRISON');
+    return;
+  }
+
+  if (tile.special === 'CANCEL_PATH') {
+    // D-13: Cop Tile 7 — Hospital + cancel progress
+    exitPath(player, 'hospital');
+    player.inHospital = true;
+    player.position = 30;
+    io.to(roomCode).emit('movedToHospital', {
+      playerName: player.name,
+      reason: 'cop-tile-7',
+      newHp: player.hp
+    });
+    advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, 30, 'PATH_CANCEL');
+    return;
+  }
+
+  if (tile.special === 'SENT_TO_PAYDAY') {
+    // Tech Bro Tile 9: sent to Payday, no salary collected
+    exitPath(player, 'special');
+    player.position = 0;
+    player.skipNextPayday = true;
+    io.to(roomCode).emit('pathTileEvent', {
+      playerId,
+      playerName: player.name,
+      career: pathConfig.key,
+      displayName: pathConfig.displayName,
+      tileIndex: newPathTile,
+      totalTiles: pathConfig.tiles.length,
+      eventText: tile.event,
+      statChanges: {},
+      specialEffect: 'SENT_TO_PAYDAY',
+      newStats: { money: player.money, fame: player.fame, happiness: player.happiness, hp: player.hp, salary: player.salary }
+    });
+    advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, 0, 'PATH_PAYDAY');
+    return;
+  }
+
+  if (tile.special === 'SKIP_TURN') {
+    player.skipNextTurn = true;
+  }
+
+  // PvP effects
+  if (tile.pvpEffects) {
+    for (const effect of tile.pvpEffects) {
+      const targets: Player[] = [];
+      if (effect.target === 'all') {
+        targets.push(...Array.from(room.players.values()));
+      } else if (effect.target === 'all_others') {
+        targets.push(...Array.from(room.players.values()).filter(p => p.socketId !== playerId));
+      } else if (effect.target === 'choose_one') {
+        // For Phase 8: pick random other player
+        const others = Array.from(room.players.values()).filter(p => p.socketId !== playerId);
+        if (others.length > 0) {
+          targets.push(others[Math.floor(Math.random() * others.length)]);
+        }
+      }
+      for (const target of targets) {
+        if (effect.stat === 'fame') target.fame += effect.amount;
+        else if (effect.stat === 'happiness') target.happiness += effect.amount;
+        else if (effect.stat === 'hp') target.hp += effect.amount;
+        else if (effect.stat === 'cash') target.money += effect.amount;
+      }
+    }
+  }
+
+  // Dice-based tiles
+  if (tile.diceMultiplier !== undefined && tile.diceTarget) {
+    const diceRoll = Math.floor(Math.random() * 6) + 1;
+    const diceValue = diceRoll * tile.diceMultiplier;
+    if (tile.diceTarget === 'cash') player.money += diceValue;
+    else if (tile.diceTarget === 'salary') player.salary += diceValue;
+    else if (tile.diceTarget === 'fame') player.fame += diceValue;
+  }
+
+  // Salary multiplier cash tiles (Starving Artist T8)
+  if (tile.salaryMultiplierCash) {
+    player.money += player.salary * tile.salaryMultiplierCash;
+  }
+
+  advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, pathConfig.boardTile, `PATH_${player.currentPath}`);
+}
+
 // ── Phase 8: Path helpers ──────────────────────────────────────────────────
 
 function enterPath(player: Player, pathKey: string): void {
@@ -1314,27 +1691,46 @@ function dispatchTile(
       break;
     }
 
-    case 'OPPORTUNITY_KNOCKS':
-    case 'PAY_TAXES':
-    case 'STUDENT_LOAN_REDIRECT':
-    case 'CIGARETTE_BREAK':
+    case 'STUDENT_LOAN_REDIRECT': {
+      // D-12: move to University (Tile 9), entry fee waived, lose 15,000
+      player.money -= 15000;
+      player.position = 9;
+      // Enter University path directly with $0 fee
+      enterPath(player, 'UNIVERSITY');
+      io.to(roomCode).emit('tile-student-loan-redirect', {
+        playerName: player.name,
+        newMoney: player.money,
+        redirectedTo: 'University'
+      });
+      advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, 9, 'STUDENT_LOAN_REDIRECT');
+      break;
+    }
+
     case 'UNIVERSITY':
     case 'MCDONALDS':
     case 'FINANCE_BRO':
-    case 'ART_GALLERY':
     case 'SUPPLY_TEACHER':
-    case 'GYM_MEMBERSHIP':
     case 'COP':
-    case 'LOTTERY':
     case 'PEOPLE_AND_CULTURE':
-    case 'REVOLUTION':
     case 'TECH_BRO':
     case 'RIGHT_WING_GRIFTER':
-    case 'OZEMPIC':
     case 'STARVING_ARTIST':
-    case 'YACHT_HARBOR':
-    case 'INSTAGRAM_FOLLOWERS':
     case 'STREAMER': {
+      // Phase 8: Career/University entry prompt
+      handleCareerEntry(room, roomCode, playerId, tileType, roll, fromPosition, tileIndex);
+      break;
+    }
+
+    case 'OPPORTUNITY_KNOCKS':
+    case 'PAY_TAXES':
+    case 'CIGARETTE_BREAK':
+    case 'ART_GALLERY':
+    case 'GYM_MEMBERSHIP':
+    case 'LOTTERY':
+    case 'REVOLUTION':
+    case 'OZEMPIC':
+    case 'YACHT_HARBOR':
+    case 'INSTAGRAM_FOLLOWERS': {
       // Phase 5 stub: no effect yet — full mechanics in Phases 6–10
       console.log(`[tile] ${player.name} landed on ${tileName} (stub)`);
       advanceTurn(room, roomCode, playerId, player.name, roll, fromPosition, tileIndex, tileType);
@@ -1584,6 +1980,42 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Phase 8: Cop wait turn — skip turn while waiting for Cop path to begin
+    if (player.copWaitTurns > 0) {
+      player.copWaitTurns -= 1;
+      if (player.copWaitTurns === 0) {
+        // Training complete — enter Cop path next turn
+        enterPath(player, 'COP');
+        io.to(roomCode).emit('copWaitComplete', {
+          playerName: player.name
+        });
+      } else {
+        io.to(roomCode).emit('copWaiting', {
+          playerName: player.name,
+          turnsRemaining: player.copWaitTurns
+        });
+      }
+      advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position, 'COP_WAIT');
+      return;
+    }
+
+    // Phase 8: Path intercept — roll 1d6 inside career/university path (D-01)
+    if (player.inPath && player.currentPath) {
+      const pathRoll = Math.floor(Math.random() * 6) + 1;
+      room.turnPhase = TURN_PHASES.MID_ROLL;
+      io.to(roomCode).emit('move-token', {
+        playerId: socket.id,
+        playerName: player.name,
+        roll: pathRoll,
+        d1: pathRoll,
+        d2: 0,
+        fromPosition: player.position,
+        toPosition: player.position // position doesn't change on main board
+      });
+      handlePathTurn(room, roomCode, socket.id, pathRoll);
+      return;
+    }
+
     // Phase 6: Hospital intercept — roll 1d6 to escape instead of normal movement
     if (player.inHospital) {
       handleHospitalEscape(room, roomCode, socket.id);
@@ -1757,6 +2189,183 @@ io.on('connection', (socket) => {
     dispatchTile(room, roomCode, socket.id, pending.tileIndex, pending.roll, pending.fromPosition);
   });
 
+  // Phase 8: Career/University path socket handlers
+
+  socket.on('career-enter', (data: { career: string }) => {
+    if (!checkRateLimit(socket.id, 'roll-dice')) return;
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) return;
+    const room = getRoom(roomCode);
+    if (!room || room.gamePhase !== GAME_PHASES.PLAYING) return;
+    const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+    if (socket.id !== currentPlayerId) return;
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_CAREER_DECISION) return;
+
+    const player = room.players.get(socket.id)!;
+    const pathKey = data.career;
+    const pathConfig = CAREER_PATHS[pathKey];
+    if (!pathConfig) return;
+
+    const { fee } = checkEntryRequirements(player, pathConfig);
+
+    // Deduct entry fee
+    player.money -= fee;
+
+    // Check if player entered via alt (no degree match) — apply stat cost
+    const requiredDegrees = pathConfig.entry.degree
+      ? (Array.isArray(pathConfig.entry.degree) ? pathConfig.entry.degree : [pathConfig.entry.degree])
+      : [];
+    const hasDegree = player.degree !== null && requiredDegrees.includes(player.degree);
+    if (!hasDegree && pathConfig.entry.altStatCost) {
+      const { stat, amount } = pathConfig.entry.altStatCost;
+      if (stat === 'fame') player.fame += amount;
+      else if (stat === 'happiness') player.happiness += amount;
+    }
+
+    // Cop special: wait 1 turn (D-08)
+    if (pathConfig.entry.waitTurns) {
+      player.copWaitTurns = pathConfig.entry.waitTurns;
+      io.to(roomCode).emit('copWaitStarted', {
+        playerName: player.name,
+        turnsToWait: pathConfig.entry.waitTurns,
+        feePaid: fee
+      });
+      advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position, 'COP_ENTRY');
+      return;
+    }
+
+    // Normal entry
+    enterPath(player, pathKey);
+
+    io.to(roomCode).emit('careerEntered', {
+      playerId: socket.id,
+      playerName: player.name,
+      career: pathKey,
+      displayName: pathConfig.displayName,
+      feePaid: fee,
+      newMoney: player.money
+    });
+
+    advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position, `${pathKey}_ENTER`);
+  });
+
+  socket.on('career-pass', () => {
+    if (!checkRateLimit(socket.id, 'roll-dice')) return;
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) return;
+    const room = getRoom(roomCode);
+    if (!room || room.gamePhase !== GAME_PHASES.PLAYING) return;
+    const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+    if (socket.id !== currentPlayerId) return;
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_CAREER_DECISION &&
+        room.turnPhase !== TURN_PHASES.WAITING_FOR_STREAMER_ROLL) return;
+
+    const player = room.players.get(socket.id)!;
+    advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position, 'CAREER_PASSED');
+  });
+
+  socket.on('streamer-roll-attempt', () => {
+    if (!checkRateLimit(socket.id, 'roll-dice')) return;
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) return;
+    const room = getRoom(roomCode);
+    if (!room || room.gamePhase !== GAME_PHASES.PLAYING) return;
+    const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+    if (socket.id !== currentPlayerId) return;
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_STREAMER_ROLL) return;
+
+    const player = room.players.get(socket.id)!;
+    const pathConfig = CAREER_PATHS.STREAMER;
+    const rollToEnter = pathConfig.entry.rollToEnter!;
+
+    // D-09: deduct attempt cost
+    player.money -= rollToEnter.dieCost;
+    player.streamerAttemptsUsed += 1;
+
+    const streamerRoll = Math.floor(Math.random() * 6) + 1;
+    const success = streamerRoll === rollToEnter.target;
+    const attemptsRemaining = rollToEnter.maxAttempts - player.streamerAttemptsUsed;
+
+    io.to(socket.id).emit('streamerRollResult', {
+      roll: streamerRoll,
+      success,
+      attemptsRemaining,
+      newMoney: player.money
+    });
+
+    if (success) {
+      enterPath(player, 'STREAMER');
+      io.to(roomCode).emit('careerEntered', {
+        playerId: socket.id,
+        playerName: player.name,
+        career: 'STREAMER',
+        displayName: 'Streamer',
+        feePaid: rollToEnter.dieCost * player.streamerAttemptsUsed,
+        newMoney: player.money
+      });
+      advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position, 'STREAMER_ENTER');
+      return;
+    }
+
+    if (attemptsRemaining <= 0 || player.money < rollToEnter.dieCost) {
+      // No more attempts
+      player.streamerAttemptsUsed = 0;
+      advanceTurn(room, roomCode, socket.id, player.name, 0, player.position, player.position, 'STREAMER_FAIL');
+    }
+    // else: still in WAITING_FOR_STREAMER_ROLL, player can roll again
+  });
+
+  socket.on('choose-degree', (data: { degree: string }) => {
+    if (!checkRateLimit(socket.id, 'roll-dice')) return;
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) return;
+    const room = getRoom(roomCode);
+    if (!room || room.gamePhase !== GAME_PHASES.PLAYING) return;
+    const currentPlayerId = room.turnOrder[room.currentTurnIndex];
+    if (socket.id !== currentPlayerId) return;
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_DEGREE_CHOICE) return;
+
+    const player = room.players.get(socket.id)!;
+    const degree = data.degree;
+
+    // Validate degree
+    if (!AVAILABLE_DEGREES.includes(degree)) return;
+    if (player.degree !== null) return; // Already has degree
+
+    // D-17: Set degree
+    player.degree = degree;
+    player.graduationCapColor = DEGREE_CAP_COLORS[degree] ?? null;
+
+    io.to(roomCode).emit('degreeChosen', {
+      playerId: socket.id,
+      playerName: player.name,
+      degree,
+      capColor: player.graduationCapColor
+    });
+
+    // D-20: Medical Degree → isDoctor, sent to Hospital immediately
+    if (degree === 'medical') {
+      player.isDoctor = true;
+      player.inHospital = true;
+      player.position = 30;
+      exitPath(player, 'completed');
+      io.to(roomCode).emit('movedToHospital', {
+        playerName: player.name,
+        reason: 'medical-residency',
+        newHp: player.hp
+      });
+      advanceTurn(room, roomCode, socket.id, player.name, 0, 9, 30, 'MEDICAL_RESIDENCY');
+      return;
+    }
+
+    // Non-medical degree: normal completion
+    const uniPathConfig = CAREER_PATHS.UNIVERSITY;
+    exitPath(player, 'completed');
+    player.position = uniPathConfig.exitTile;
+
+    advanceTurn(room, roomCode, socket.id, player.name, 0, 9, uniPathConfig.exitTile, 'UNIVERSITY_COMPLETE');
+  });
+
   socket.on('disconnect', (reason: string) => {
     clearRateLimitState(socket.id);
     socketLastPong.delete(socket.id);
@@ -1849,6 +2458,9 @@ export {
   // Phase 7 exports
   handlePropertyLanding, handlePropertyBuy, handlePropertyPass,
   // Phase 8 exports
-  enterPath, exitPath
+  enterPath, exitPath,
+  checkEntryRequirements, handleCareerEntry, handlePathTurn,
+  handlePathCompletion, applyPathTileEffects,
+  DEGREE_CAP_COLORS, AVAILABLE_DEGREES,
 };
 

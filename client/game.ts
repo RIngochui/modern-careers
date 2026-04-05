@@ -569,14 +569,22 @@ socket.on('ping', () => { socket.emit('pong'); });
     addTurnHistory(`${playerName} escaped Hospital (rolled ${escapeRoll})`);
   });
 
+  socket.on('hospital-pay-freed', ({ playerName, payment }: { playerName: string; payment: number }) => {
+    addTurnHistory(`${playerName} paid $${payment.toLocaleString()} to leave Hospital — now rolling`);
+  });
+
+  socket.on('movedToHospital', ({ playerName, newHp }: { playerName: string; reason: string; newHp: number }) => {
+    addTurnHistory(`${playerName} → Hospital (HP: ${newHp})`);
+  });
+
   // ── Phase 6: Prison event handlers (host screen) ─────────────────────
 
   socket.on('prison-entered', ({ playerName }: { playerName: string }) => {
     addTurnHistory(`${playerName} → Prison`);
   });
 
-  socket.on('prison-escaped', ({ playerName }: { playerName: string; roll?: number; method?: string; newPosition: number }) => {
-    addTurnHistory(`${playerName} escaped Prison`);
+  socket.on('prison-escaped', ({ playerName, method }: { playerName: string; roll?: number; method?: string; newPosition: number }) => {
+    addTurnHistory(method === 'bail' ? `${playerName} paid bail — left Prison` : `${playerName} escaped Prison`);
   });
 
   // ── Phase 6: Japan Trip event handlers (host screen) ─────────────────
@@ -664,6 +672,8 @@ socket.on('ping', () => { socket.emit('pong'); });
   const statHpEl      = document.getElementById('stat-hp') as HTMLElement;
   const statDegreeEl  = document.getElementById('stat-degree') as HTMLElement;
   const statCareerEl  = document.getElementById('stat-career') as HTMLElement;
+  const statSalaryEl  = document.getElementById('stat-salary') as HTMLElement;
+  let myCurrentSalary = 10000;
   const tileInstrEl   = document.getElementById('active-tile-instruction') as HTMLElement;
   const tileNameEl    = document.getElementById('tile-name-display') as HTMLElement;
   const tileTextEl    = document.getElementById('tile-instruction-text') as HTMLElement;
@@ -713,12 +723,24 @@ socket.on('ping', () => { socket.emit('pong'); });
 
   // ── Helpers ────────────────────────────────────────────────────────────
 
+  let myInHospital    = false;
+  let myInPrison      = false;
+  let myCurrentMoney  = 10000;
+
   function updateRollButton(): void {
     const isMyTurn = (mySocketId !== null && currentTurnPlayerId === mySocketId);
     const canRoll  = isMyTurn && currentTurnPhase === 'WAITING_FOR_ROLL';
     rollBtn.disabled = !canRoll;
     rollBtn.style.opacity = canRoll ? '1' : '0.35';
     rollBtn.style.cursor  = canRoll ? 'pointer' : 'not-allowed';
+    const hospitalPayBtn = document.getElementById('btn-hospital-pay') as HTMLButtonElement | null;
+    if (hospitalPayBtn) {
+      hospitalPayBtn.style.display = (canRoll && myInHospital) ? 'block' : 'none';
+    }
+    const bailBtn = document.getElementById('btn-prison-bail') as HTMLButtonElement | null;
+    if (bailBtn) {
+      bailBtn.style.display = (canRoll && myInPrison && myCurrentMoney > 0) ? 'block' : 'none';
+    }
   }
 
   function showDrainNotification(deductions: Array<{type: string; amount: number}>): void {
@@ -782,11 +804,20 @@ socket.on('ping', () => { socket.emit('pong'); });
     }
   });
 
-  socket.on('move-token', ({ playerId, roll, d1, d2 }: { playerId: string; playerName: string; roll: number; d1: number; d2: number; fromPosition: number; toPosition: number }) => {
+  socket.on('move-token', ({ playerId, roll, d1, d2, toPosition }: { playerId: string; playerName: string; roll: number; d1: number; d2: number; fromPosition: number; toPosition: number }) => {
     if (playerId === mySocketId) {
       currentTurnPhase = 'MID_ROLL';
       updateRollButton(); // disable during roll animation
       if (lastRollDisplay) lastRollDisplay.textContent = `You rolled ${roll} (${d1} + ${d2})`;
+      // Update "Currently on" immediately so it matches before any prompt appears
+      if (toPosition !== undefined && boardTilesData.length > 0) {
+        const tile = boardTilesData[toPosition];
+        if (tile && tileInstrEl && tileNameEl && tileTextEl) {
+          tileInstrEl.style.display = 'block';
+          tileNameEl.textContent = 'Currently on: ' + tile.name;
+          tileTextEl.textContent = tile.description;
+        }
+      }
     }
   });
 
@@ -803,11 +834,22 @@ socket.on('ping', () => { socket.emit('pong'); });
     if (state.players && mySocketId && state.players[mySocketId]) {
       const me = state.players[mySocketId];
       // Update stat grid
+      if (me.money !== undefined) myCurrentMoney = me.money;
       if (statMoneyEl)  statMoneyEl.textContent  = '$' + me.money.toLocaleString();
       if (statFameEl)   statFameEl.textContent    = String(me.fame ?? 0);
       if (statHapEl)    statHapEl.textContent     = String(me.happiness ?? 0);
       if (statHpEl)     statHpEl.textContent      = String(me.hp ?? 10);
       if (statCareerEl) statCareerEl.textContent  = me.career ?? 'None';
+      if (me.salary !== undefined) {
+        myCurrentSalary = me.salary;
+        if (statSalaryEl) statSalaryEl.textContent = '$' + me.salary.toLocaleString();
+        const payBtn = document.getElementById('btn-hospital-pay') as HTMLButtonElement | null;
+        if (payBtn) payBtn.textContent = `Pay $${Math.floor(me.salary / 2).toLocaleString()} (½ Salary) to Escape`;
+      }
+      if (me.money !== undefined) {
+        const bailBtn = document.getElementById('btn-prison-bail') as HTMLButtonElement | null;
+        if (bailBtn) bailBtn.textContent = `Pay $${Math.floor(me.money / 2).toLocaleString()} (½ Money) Bail`;
+      }
       // Phase 8: degree display name + path progress hide when not in path
       if (statDegreeEl) {
         if (me.degree) {
@@ -818,6 +860,8 @@ socket.on('ping', () => { socket.emit('pong'); });
           statDegreeEl.style.color = '';
         }
       }
+      if (me.inHospital !== undefined) myInHospital = me.inHospital;
+      if (me.inPrison  !== undefined) myInPrison   = me.inPrison;
       if (!me.inPath) {
         const pathProgress = document.getElementById('path-progress');
         if (pathProgress) pathProgress.style.display = 'none';
@@ -864,6 +908,36 @@ socket.on('ping', () => { socket.emit('pong'); });
     setTimeout(() => { rollBtn.textContent = 'Roll Dice'; }, 1000);
   });
 
+  // ── Hospital pay-to-escape button ────────────────────────────────────
+
+  document.getElementById('btn-hospital-pay')?.addEventListener('click', () => {
+    const btn = document.getElementById('btn-hospital-pay') as HTMLButtonElement | null;
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.35'; }
+    socket.emit('hospital-pay-escape');
+  });
+
+  // ── Prison bail button ────────────────────────────────────────────────
+
+  document.getElementById('btn-prison-bail')?.addEventListener('click', () => {
+    const btn = document.getElementById('btn-prison-bail') as HTMLButtonElement | null;
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.35'; }
+    socket.emit('prison-bail');
+  });
+
+  // ── Goomba stomp prompt ───────────────────────────────────────────────
+
+  document.getElementById('btn-stomp-accept')?.addEventListener('click', () => {
+    const div = document.getElementById('stomp-choice');
+    if (div) div.style.display = 'none';
+    socket.emit('stomp-decision', { accept: true });
+  });
+
+  document.getElementById('btn-stomp-decline')?.addEventListener('click', () => {
+    const div = document.getElementById('stomp-choice');
+    if (div) div.style.display = 'none';
+    socket.emit('stomp-decision', { accept: false });
+  });
+
   // ── Phase 6: Status banner helpers ───────────────────────────────────
 
   const statusBannerEl = document.getElementById('status-banner') as HTMLElement | null;
@@ -883,7 +957,7 @@ socket.on('ping', () => { socket.emit('pong'); });
 
   socket.on('hospital-entered', ({ playerName, newHp }: { playerName: string; reason: string; newHp: number }) => {
     if (mySocketId && currentTurnPlayerId === mySocketId) {
-      showStatusBanner(`You've been hospitalized! HP: ${newHp}. Roll to escape or pay 1/2 Salary.`, '#dc2626');
+      showStatusBanner(`Hospitalized! HP: ${newHp}. Roll a 5 or less to escape, or pay ½ Salary.`, '#dc2626');
     }
     if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} sent to Hospital (HP: ${newHp})`;
   });
@@ -895,7 +969,10 @@ socket.on('ping', () => { socket.emit('pong'); });
   });
 
   socket.on('hospital-escaped', ({ playerName, escapeRoll, hpGained, payment, newHp, newMoney }: { playerName: string; escapeRoll: number; hpGained: number; payment: number; recipientRole: string; newHp: number; newMoney: number }) => {
+    if (mySocketId && currentTurnPlayerId === mySocketId) myInHospital = false;
     clearStatusBanner();
+    const hospitalPayBtn = document.getElementById('btn-hospital-pay') as HTMLButtonElement | null;
+    if (hospitalPayBtn) hospitalPayBtn.style.display = 'none';
     if (mySocketId && currentTurnPlayerId === mySocketId) {
       if (lastRollDisplay) lastRollDisplay.textContent = `Escaped! Rolled ${escapeRoll}. +${hpGained} HP. Paid $${payment.toLocaleString()}.`;
       if (statHpEl) statHpEl.textContent = String(newHp);
@@ -903,11 +980,34 @@ socket.on('ping', () => { socket.emit('pong'); });
     }
   });
 
+  socket.on('hospital-pay-freed', ({ payment, hpGained, newHp, newMoney }: { playerName: string; payment: number; recipientRole: string; hpGained: number; newHp: number; newMoney: number }) => {
+    if (mySocketId && currentTurnPlayerId !== mySocketId) return;
+    myInHospital = false;
+    clearStatusBanner();
+    const hospitalPayBtn = document.getElementById('btn-hospital-pay') as HTMLButtonElement | null;
+    if (hospitalPayBtn) hospitalPayBtn.style.display = 'none';
+    if (lastRollDisplay) lastRollDisplay.textContent = `Paid $${payment.toLocaleString()} to escape. +${hpGained} HP. Now roll!`;
+    if (statHpEl) statHpEl.textContent = String(newHp);
+    if (statMoneyEl) statMoneyEl.textContent = '$' + newMoney.toLocaleString();
+    // Re-enable roll button — player is free to roll normally
+    currentTurnPhase = 'WAITING_FOR_ROLL';
+    updateRollButton();
+  });
+
+  socket.on('movedToHospital', ({ playerName, newHp }: { playerName: string; reason: string; newHp: number }) => {
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      showStatusBanner(`Hospitalized! HP: ${newHp}. Roll a 5 or less to escape, or pay ½ Salary.`, '#dc2626');
+    }
+    if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} sent to Hospital (HP: ${newHp})`;
+  });
+
   // ── Phase 6: Prison event handlers (player screen) ───────────────────
 
   socket.on('prison-entered', ({ playerName }: { playerName: string }) => {
+    if (mySocketId && currentTurnPlayerId === mySocketId) {
+      showStatusBanner('You\'re in Prison! Roll 9, 11, or 12 to escape, or pay $5,000 bail.', '#b45309');
+    }
     if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} sent to Prison!`;
-    // Cards still allowed in prison — no block message shown
   });
 
   socket.on('prison-stayed', ({ playerName, roll }: { playerName: string; roll: number }) => {
@@ -916,8 +1016,24 @@ socket.on('ping', () => { socket.emit('pong'); });
     }
   });
 
-  socket.on('prison-escaped', ({ playerName, newPosition }: { playerName: string; roll?: number; method?: string; newPosition: number }) => {
-    if (lastRollDisplay) lastRollDisplay.textContent = `${playerName} escaped Prison! Moving to tile ${newPosition}.`;
+  socket.on('prison-escaped', ({ playerName, method, newPosition }: { playerName: string; roll?: number; method?: string; newPosition: number }) => {
+    myInPrison = false;
+    clearStatusBanner();
+    const bailBtn = document.getElementById('btn-prison-bail') as HTMLButtonElement | null;
+    if (bailBtn) { bailBtn.style.display = 'none'; bailBtn.disabled = false; bailBtn.style.opacity = '1'; }
+    const msg = method === 'bail'
+      ? `${playerName} paid bail and left Prison.`
+      : `${playerName} escaped Prison! Moving to tile ${newPosition}.`;
+    if (lastRollDisplay) lastRollDisplay.textContent = msg;
+  });
+
+  socket.on('stomp-available', ({ targetNames, isCop }: { targetNames: string[]; isCop: boolean }) => {
+    const div = document.getElementById('stomp-choice');
+    const msg = document.getElementById('stomp-msg');
+    if (!div || !msg) return;
+    const destination = isCop ? 'Prison' : 'Payday (no salary collected)';
+    msg.textContent = `You landed on ${targetNames.join(', ')}! Send them to ${destination}?`;
+    div.style.display = 'block';
   });
 
   socket.on('prison-cop-immune', ({ playerName }: { playerName: string }) => {

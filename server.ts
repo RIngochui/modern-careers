@@ -733,15 +733,18 @@ function handleHpCheck(room: GameRoom, roomCode: string, playerId: string): void
  * - Roll 6: stay — emit 'hospital-stayed', call advanceTurn.
  * Call this inside roll-dice when player.inHospital is true.
  */
-function handleHospitalEscape(room: GameRoom, roomCode: string, playerId: string): void {
+function handleHospitalEscape(room: GameRoom, roomCode: string, playerId: string, forcedRoll?: number): void {
   const player = room.players.get(playerId);
   if (!player) return;
 
-  const escapeRoll = Math.floor(Math.random() * 6) + 1;
+  const escapeRoll = forcedRoll ?? (Math.floor(Math.random() * 6) + 1);
 
   if (escapeRoll <= 5) {
-    // ESCAPE
+    // ESCAPE — move forward from tile 30 by the escape roll
+    const from = player.position;
+    const to = (player.position + escapeRoll) % 40;
     player.inHospital = false;
+    player.position = to;
     player.hp += 2;
     const payment = Math.floor(player.salary / 2);
     player.money -= payment;
@@ -756,6 +759,17 @@ function handleHospitalEscape(room: GameRoom, roomCode: string, playerId: string
       recipientRole = 'Banker';
     }
 
+    // Emit move-token so board and player screen update position immediately
+    io.to(roomCode).emit('move-token', {
+      playerId,
+      playerName: player.name,
+      roll: escapeRoll,
+      d1: escapeRoll,
+      d2: 0,
+      fromPosition: from,
+      toPosition: to
+    });
+
     io.to(roomCode).emit('hospital-escaped', {
       playerName: player.name,
       escapeRoll,
@@ -766,7 +780,7 @@ function handleHospitalEscape(room: GameRoom, roomCode: string, playerId: string
       newMoney: player.money
     });
 
-    advanceTurn(room, roomCode, playerId, player.name, escapeRoll, player.position, player.position, 'HOSPITAL_ESCAPE');
+    advanceTurn(room, roomCode, playerId, player.name, escapeRoll, from, to, 'HOSPITAL_ESCAPE');
   } else {
     // STAY
     io.to(roomCode).emit('hospital-stayed', {
@@ -828,7 +842,7 @@ function handlePrisonBail(room: GameRoom, roomCode: string, playerId: string): v
   const player = room.players.get(playerId);
   if (!player) return;
 
-  const BAIL_AMOUNT = 5000;
+  const BAIL_AMOUNT = Math.floor(player.money / 2);
   player.money -= BAIL_AMOUNT;
   player.inPrison = false;
   player.prisonTurns = 0;
@@ -1403,6 +1417,7 @@ function handlePathTurn(
       if (player.hp <= 0) {
         exitPath(player, 'hospital');
         checkHpAndHospitalize(player, room, roomCode);
+        advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, 30, 'PATH_HP_ZERO');
         return;
       }
     }
@@ -1444,6 +1459,7 @@ function handlePathTurn(
   if (player.hp <= 0) {
     exitPath(player, 'hospital');
     checkHpAndHospitalize(player, room, roomCode);
+    advanceTurn(room, roomCode, playerId, player.name, roll, pathConfig.boardTile, 30, 'PATH_HP_ZERO');
     return;
   }
 
@@ -1679,9 +1695,10 @@ function dispatchTile(
     }
 
     case 'HOSPITAL': {
-      // Phase 6: Landing on Hospital tile (e.g. moved here due to HP = 0)
-      // Player is already flagged inHospital=true by checkHpAndHospitalize
-      // This case handles direct landing (no HP-zero trigger) — just advance turn
+      // Phase 6: Landing on Hospital tile — flag player and notify
+      player.inHospital = true;
+      player.inPrison = false;
+      player.inJapan = false;
       io.to(roomCode).emit('hospital-entered', {
         playerName: player.name,
         reason: 'landed',
@@ -1948,17 +1965,76 @@ io.on('connection', (socket) => {
     const roomCode = findRoomCodeBySocketId(socket.id);
     if (!roomCode) return;
     const room = getRoom(roomCode);
-    if (!room || room.gamePhase !== 'PLAYING') return;
+    if (!room || room.gamePhase !== GAME_PHASES.PLAYING) return;
     const player = room.players.get(socket.id);
     if (!player || room.turnOrder[room.currentTurnIndex] !== socket.id) return;
-    if (room.turnPhase !== 'WAITING_FOR_ROLL') return;
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_ROLL) return;
+
+    // In hospital: use forced value as escape roll (1–6)
+    if (player.inHospital) {
+      const escapeRoll = Math.max(1, Math.min(6, Number(roll)));
+      room.turnPhase = TURN_PHASES.MID_ROLL;
+      handleHospitalEscape(room, roomCode, socket.id, escapeRoll);
+      return;
+    }
+
+    // Inside a career path: forced path roll (1–6)
+    if (player.inPath && player.currentPath) {
+      const pathRoll = Math.max(1, Math.min(6, Number(roll)));
+      room.turnPhase = TURN_PHASES.MID_ROLL;
+      io.to(roomCode).emit('move-token', { playerId: socket.id, playerName: player.name, roll: pathRoll, d1: pathRoll, d2: 0, fromPosition: player.position, toPosition: player.position });
+      handlePathTurn(room, roomCode, socket.id, pathRoll);
+      return;
+    }
+
+    // Board: forced dice roll — normal movement from current position
     const forcedRoll = Math.max(1, Math.min(12, Number(roll)));
     const from = player.position;
     const to = (from + forcedRoll) % 40;
-    room.turnPhase = 'MID_ROLL';
+    room.turnPhase = TURN_PHASES.MID_ROLL;
     io.to(roomCode).emit('move-token', { playerId: socket.id, playerName: player.name, roll: forcedRoll, d1: forcedRoll, d2: 0, fromPosition: from, toPosition: to });
     player.position = to;
     dispatchTile(room, roomCode, socket.id, to, forcedRoll, from);
+  });
+
+  // ── Hospital pay-to-escape handler ──────────────────────────────────────
+
+  socket.on('hospital-pay-escape', () => {
+    const roomCode = findRoomCodeBySocketId(socket.id);
+    if (!roomCode) return;
+    const room = getRoom(roomCode);
+    if (!room || room.gamePhase !== GAME_PHASES.PLAYING) return;
+    const player = room.players.get(socket.id);
+    if (!player || room.turnOrder[room.currentTurnIndex] !== socket.id) return;
+    if (room.turnPhase !== TURN_PHASES.WAITING_FOR_ROLL) return;
+    if (!player.inHospital) return;
+
+    const payment = Math.floor(player.salary / 2);
+    player.inHospital = false;
+    player.money -= payment;
+    player.hp += 2;
+
+    const doctorPlayer = Array.from(room.players.values()).find(p => p.isDoctor === true);
+    let recipientRole: string;
+    if (doctorPlayer) {
+      doctorPlayer.money += payment;
+      recipientRole = 'Doctor';
+    } else {
+      recipientRole = 'Banker';
+    }
+
+    // Don't advance the turn — player paid to get out and now rolls normally
+    room.turnPhase = TURN_PHASES.WAITING_FOR_ROLL;
+    io.to(roomCode).emit('hospital-pay-freed', {
+      playerName: player.name,
+      payment,
+      recipientRole,
+      hpGained: 2,
+      newHp: player.hp,
+      newMoney: player.money
+    });
+    // Broadcast updated state so all clients see the money deduction and inHospital=false
+    io.to(roomCode).emit('gameState', getFullState(room));
   });
 
   // ── Game loop socket handlers ────────────────────────────────────────────
@@ -2126,6 +2202,7 @@ io.on('connection', (socket) => {
     const player = room.players.get(socket.id);
     if (!player) { socket.emit('error', { message: 'You are not in this room' }); return; }
     if (!player.inPrison) { socket.emit('error', { message: 'You are not in prison' }); return; }
+    if (player.money <= 0) { socket.emit('error', { message: 'No money to pay bail' }); return; }
     handlePrisonBail(room, roomCode, socket.id);
   });
 

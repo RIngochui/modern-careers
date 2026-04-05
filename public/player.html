@@ -165,11 +165,11 @@
     <!-- Debug panel — visible only when ?debug=1 in URL -->
     <div id="debug-panel" style="display:none; margin-bottom:12px; padding:8px 12px; background:#1a0a0a; border:1px dashed #f87171; border-radius:6px; font-size:13px; color:#f87171;">
       <strong>DEBUG</strong> &nbsp;
-      Force roll:
-      <input id="debug-tile-input" type="number" min="1" max="12" value="6"
+      Tile (board) / Steps (in path):
+      <input id="debug-tile-input" type="number" min="0" max="39" value="4"
              style="width:42px; background:#1a1a2e; color:#eee; border:1px solid #555; border-radius:4px; padding:2px 4px; font-family:monospace;">
       then click Roll Dice &nbsp;
-      <span style="color:#555; font-size:11px;">(4→McD · 9→Uni · 18→Cop · 22→P&C · 38→Stream from start)</span>
+      <span style="color:#555; font-size:11px;">(board: 4=McD · 9=Uni · 18=Cop · 22=P&amp;C · 38=Stream | in path: 1–6 steps)</span>
     </div>
 
     <div id="turn-indicator" style="text-align:center;font-size:1.125rem;font-weight:600;color:#aaa;margin-bottom:16px;">
@@ -203,6 +203,59 @@
         opacity:0.35;
         transition:opacity 0.2s,background 0.2s;
       ">Roll Dice</button>
+      <!-- Hospital pay-to-escape button — shown only when inHospital and it's player's turn -->
+      <button id="btn-hospital-pay" style="
+        display:none;
+        width:100%;
+        max-width:300px;
+        margin:8px auto 0;
+        height:40px;
+        font-size:0.9rem;
+        font-weight:600;
+        background:#7c3aed;
+        color:#fff;
+        border:none;
+        border-radius:10px;
+        cursor:pointer;
+        transition:opacity 0.2s;
+      ">Pay $5,000 (½ Salary) to Escape</button>
+      <!-- Prison bail button — shown only when inPrison and it's player's turn -->
+      <button id="btn-prison-bail" style="
+        display:none;
+        width:100%;
+        max-width:300px;
+        margin:8px auto 0;
+        height:40px;
+        font-size:0.9rem;
+        font-weight:600;
+        background:#b45309;
+        color:#fff;
+        border:none;
+        border-radius:10px;
+        cursor:pointer;
+        transition:opacity 0.2s;
+      ">Pay ½ Money Bail to Leave Prison</button>
+    </div>
+
+    <!-- Goomba Stomp prompt — shown when you land on an occupied tile -->
+    <div id="stomp-choice" style="
+      display:none;
+      text-align:center;
+      padding:16px;
+      margin-top:12px;
+      background:#16213e;
+      border:2px solid #f87171;
+      border-radius:8px;
+    ">
+      <span id="stomp-msg" style="display:block;font-size:1rem;color:#eee;margin-bottom:12px;"></span>
+      <button id="btn-stomp-accept" style="
+        padding:12px 24px;font-size:1rem;font-weight:700;
+        background:#f87171;color:#1a1a2e;border:none;border-radius:8px;cursor:pointer;margin-right:8px;
+      ">Stomp!</button>
+      <button id="btn-stomp-decline" style="
+        padding:12px 24px;font-size:1rem;font-weight:700;
+        background:#555;color:#eee;border:none;border-radius:8px;cursor:pointer;
+      ">Leave Them</button>
     </div>
 
     <div id="stat-grid">
@@ -221,6 +274,10 @@
       <div class="stat-item">
         <span class="stat-label">HP</span>
         <span class="stat-value" id="stat-hp">10</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Salary</span>
+        <span class="stat-value" id="stat-salary">$10,000</span>
       </div>
       <div class="stat-item">
         <span class="stat-label">Degree</span>
@@ -244,6 +301,18 @@
       margin-top:8px;
       font-family:monospace;
       min-height:1.2em;
+    "></div>
+
+    <!-- Status banner — hospital/prison/special state messages -->
+    <div id="status-banner" style="
+      display:none;
+      text-align:center;
+      font-size:0.875rem;
+      font-weight:600;
+      color:#fff;
+      padding:8px 12px;
+      border-radius:6px;
+      margin-top:8px;
     "></div>
 
     <!-- Formula reminder — tap to reveal/hide -->

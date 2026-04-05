@@ -684,6 +684,29 @@ socket.on('ping', () => { socket.emit('pong'); });
   // If socket already connected (possible when initPlayerLobby ran first), grab id immediately
   if (socket.id) mySocketId = socket.id;
 
+  // ── Debug teleport panel (wired immediately, not inside gameStarted) ────
+  if (new URLSearchParams(window.location.search).get('debug') === '1') {
+    const debugPanel = document.getElementById('debug-panel');
+    if (debugPanel) debugPanel.style.display = 'block';
+    document.getElementById('debug-goto-btn')?.addEventListener('click', () => {
+      const tile = parseInt((document.getElementById('debug-tile-input') as HTMLInputElement).value, 10);
+      socket.emit('debug-goto-tile', { tile });
+    });
+  }
+
+  // ── Formula reminder toggle ─────────────────────────────────────────────
+  document.getElementById('formula-toggle-btn')?.addEventListener('click', () => {
+    const reveal = document.getElementById('formula-reveal')!;
+    const btn = document.getElementById('formula-toggle-btn')!;
+    if (reveal.style.display === 'none') {
+      reveal.style.display = 'block';
+      btn.textContent = 'Hide your goal';
+    } else {
+      reveal.style.display = 'none';
+      btn.textContent = 'Show your goal';
+    }
+  });
+
   // ── Helpers ────────────────────────────────────────────────────────────
 
   function updateRollButton(): void {
@@ -730,16 +753,6 @@ socket.on('ping', () => { socket.emit('pong'); });
     const gameSection    = document.getElementById('game-section');
     if (waitingSection) waitingSection.style.display = 'none';
     if (gameSection)    gameSection.style.display    = 'block';
-
-    // Debug panel: show when ?debug=1
-    if (new URLSearchParams(window.location.search).get('debug') === '1') {
-      const debugPanel = document.getElementById('debug-panel');
-      if (debugPanel) debugPanel.style.display = 'block';
-      document.getElementById('debug-goto-btn')?.addEventListener('click', () => {
-        const tile = parseInt((document.getElementById('debug-tile-input') as HTMLInputElement).value, 10);
-        socket.emit('debug-goto-tile', { tile });
-      });
-    }
 
     if (boardTiles) boardTilesData = boardTiles;
     currentTurnPlayerId = currentPlayerSocketId;
@@ -804,6 +817,15 @@ socket.on('ping', () => { socket.emit('pong'); });
       if (!me.inPath) {
         const pathProgress = document.getElementById('path-progress');
         if (pathProgress) pathProgress.style.display = 'none';
+      }
+      // Formula reminder — populate once when successFormula is received
+      if (me.successFormula) {
+        const formulaReveal = document.getElementById('formula-reveal');
+        if (formulaReveal && !formulaReveal.dataset.set) {
+          formulaReveal.dataset.set = '1';
+          formulaReveal.textContent =
+            `Goal: $${me.successFormula.money.toLocaleString()} · ${me.successFormula.fame} Fame · ${me.successFormula.happiness} Happiness`;
+        }
       }
       // Update tile instruction from current position
       if (me.position !== undefined && boardTilesData.length > 0) {
